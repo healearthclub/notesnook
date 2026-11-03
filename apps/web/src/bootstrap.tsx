@@ -116,6 +116,7 @@ const sessionExpiryExceptions: Routes[] = [
 ];
 
 function getRoute(): RouteWithPath<AuthProps> | RouteWithPath {
+  if (HEAL_EMBED) return { route: routes.default, path: "default" };
   let path = getCurrentPath() as Routes;
   // logger.info(`Getting route for path: ${path}`);
 

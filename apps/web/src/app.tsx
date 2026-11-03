@@ -49,7 +49,7 @@ import { useWindowControls } from "./hooks/use-window-controls";
 import { STATUS_BAR_HEIGHT } from "./common/constants";
 import { NavigationEvents } from "./navigation";
 
-new WebExtensionRelay();
+if (!HEAL_EMBED) new WebExtensionRelay();
 
 function App() {
   const isMobile = useMobile();

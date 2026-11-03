@@ -350,7 +350,7 @@ function NavigationMenu({
                 display: "block"
               }}
             >
-              Notesnook
+              {HEAL_EMBED ? "Heal Earth Notes" : "Notesnook"}
             </Text>
           </Flex>
           <Flex sx={{ gap: "small", alignItems: "center" }}>
@@ -878,7 +878,7 @@ function NavigationDropdown() {
           [
             {
               type: "popup",
-              component: () => <UserProfile minimal />,
+              component: () => HEAL_EMBED ? <Text>Private notes · stored on this device</Text> : <UserProfile minimal />,
               key: "profile"
             },
             {
@@ -901,7 +901,7 @@ function NavigationDropdown() {
               icon: Pro.path,
               key: "upgrade",
               onClick: () => BuyDialog.show({}),
-              isHidden: notLoggedIn || isSubscribed
+              isHidden: HEAL_EMBED || notLoggedIn || isSubscribed
             },
             {
               type: "button",
@@ -926,7 +926,7 @@ function NavigationDropdown() {
               title: strings.login(),
               icon: Login.path,
               key: "login",
-              isHidden: !notLoggedIn,
+              isHidden: HEAL_EMBED || !notLoggedIn,
               onClick: () => hardNavigate("/login")
             },
             {

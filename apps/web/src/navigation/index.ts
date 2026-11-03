@@ -39,7 +39,7 @@ export function navigate(
     window.history.replaceState(null, "", makeURL(url, getCurrentHash()));
   else window.history.pushState(null, "", makeURL(url, getCurrentHash()));
 
-  if (notify) dispatchEvent(new PopStateEvent("popstate"));
+  if (notify || HEAL_EMBED) dispatchEvent(new PopStateEvent("popstate"));
 }
 
 type HashNavigateOptions = {
@@ -75,7 +75,9 @@ function parseQuery(querystring: string): Partial<Record<string, string>> {
 }
 
 export function getQueryString() {
-  return window.location.search;
+  if (!HEAL_EMBED) return window.location.search;
+  const params = new URLSearchParams(window.location.search); params.delete("route");
+  return params.size ? "?" + params.toString() : "";
 }
 
 export function getQueryParams() {
@@ -85,7 +87,7 @@ export function getQueryParams() {
 }
 
 export function getCurrentPath() {
-  return window.location.pathname || "/";
+  return HEAL_EMBED ? new URLSearchParams(window.location.search).get("route") || "/notes" : window.location.pathname || "/";
 }
 
 export function getCurrentHash() {
@@ -122,6 +124,13 @@ export function hardNavigate(route: string, search?: string) {
 
 export function makeURL(route: string, hash?: string, search?: string) {
   const url = new URL(route, window.location.origin);
+  if (HEAL_EMBED) {
+    const target = new URL("/notes-engine/index.html", window.location.origin);
+    target.search = search || url.search || getQueryString();
+    target.searchParams.set("route", url.pathname);
+    target.hash = url.hash || hash || getCurrentHash();
+    return target;
+  }
   if (!url.hash) url.hash = hash || getCurrentHash();
   url.search = search || getQueryString();
   return url;

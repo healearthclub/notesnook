@@ -54,6 +54,7 @@ async function isApplePaySupported() {
 }
 
 async function isOPFSSupported() {
+  if (HEAL_EMBED) return false;
   const hasGetDirectory =
     "getDirectory" in window.navigator.storage &&
     typeof window.navigator.storage.getDirectory === "function";
@@ -67,6 +68,7 @@ async function isOPFSSupported() {
 }
 
 async function isCacheSupported() {
+  if (HEAL_EMBED) return false;
   const hasCacheStorage =
     "CacheStorage" in window &&
     "caches" in window &&

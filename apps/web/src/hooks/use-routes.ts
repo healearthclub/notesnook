@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { useLocation } from "wouter";
 import makeMatcher from "wouter/matcher";
-import { navigate, getHomeRoute } from "../navigation";
+import { navigate, getHomeRoute, getCurrentPath } from "../navigation";
 import { Params, RouteResult, Routes } from "../navigation/types";
 import { useEffect, useState } from "react";
 
@@ -30,7 +30,15 @@ export default function useRoutes<T extends string>(
     fallbackRoute?: string;
   }
 ) {
-  const [location] = useLocation();
+  const [normalLocation] = useLocation();
+  const [embeddedLocation,setEmbeddedLocation] = useState(getCurrentPath);
+  useEffect(()=>{
+    if (!HEAL_EMBED) return;
+    const update=()=>setEmbeddedLocation(getCurrentPath());
+    window.addEventListener("popstate",update);
+    return ()=>window.removeEventListener("popstate",update);
+  },[]);
+  const location = HEAL_EMBED ? embeddedLocation : normalLocation;
   const [result, setResult] = useState<RouteResult>();
 
   useEffect(() => {

@@ -31,6 +31,7 @@ export function isActiveSubscription(user?: User) {
   );
 }
 export function isUserSubscribed(user?: User) {
+  if (HEAL_EMBED) return true;
   user = user || useUserStore.getState().user;
   if (!user) return false;
 

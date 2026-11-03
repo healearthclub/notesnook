@@ -110,6 +110,7 @@ function getTheme(colorScheme: ColorScheme) {
 }
 
 async function updateTheme(theme: ThemeDefinition) {
+  if (HEAL_EMBED) return theme;
   const { id, version } = theme;
   try {
     const updatedTheme = await ThemesRouter.updateTheme.query({

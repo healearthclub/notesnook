@@ -94,7 +94,7 @@ const sectionGroups: SectionGroup[] = [
     key: "account",
     title: strings.account(),
     sections: [
-      { key: "profile", title: strings.profile(), icon: Account },
+      { key: "profile", title: strings.profile(), icon: Account, isHidden: () => HEAL_EMBED },
       {
         key: "subscription",
         title: strings.subDetails(),
@@ -145,7 +145,7 @@ const sectionGroups: SectionGroup[] = [
         title: strings.notifications(),
         icon: Notification
       },
-      { key: "servers", title: strings.servers(), icon: Servers }
+      { key: "servers", title: strings.servers(), icon: Servers, isHidden: () => HEAL_EMBED }
     ]
   },
   {

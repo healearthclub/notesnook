@@ -233,6 +233,7 @@ function statusToInfoText(status: UpdateStatus) {
 }
 
 function SyncStatus() {
+  if (HEAL_EMBED) return <Text variant="subBody">Saved on this browser</Text>;
   const syncStatus = useAppStore((state) => state.syncStatus);
   const lastSynced = useAppStore((state) => state.lastSynced);
   const isSyncEnabled = useAppStore((state) => state.isSyncEnabled);

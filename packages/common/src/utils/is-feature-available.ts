@@ -649,6 +649,7 @@ export async function areFeaturesAvailable<TIds extends FeatureId[]>(
 }
 
 async function getUserPlan() {
+  if (typeof window !== "undefined" && (window as any).__HEAL_NOTES_LOCAL__) return SubscriptionPlan.PRO;
   const user = await db.user.getUser();
   const plan = user?.subscription?.plan || SubscriptionPlan.FREE;
   return plan;

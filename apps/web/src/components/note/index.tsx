@@ -467,6 +467,7 @@ export const noteMenuItems: (
     {
       type: "button",
       key: "publish",
+      isHidden: HEAL_EMBED,
       isDisabled: !db.monographs.isPublished(note.id) && context?.locked,
       icon: Publish.path,
       title: strings.publish(),

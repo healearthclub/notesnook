@@ -29,6 +29,7 @@ import Config from "../utils/config";
 import { FileStorage } from "../interfaces/fs";
 
 function getHostUrl(hostUrl: keyof typeof hosts, defaultUrl: string) {
+  if (HEAL_EMBED) return window.location.origin + "/api/private-notes/cloud-disabled";
   if (IS_TESTING) return defaultUrl;
   const envValue = import.meta.env[`NN_${hostUrl}`];
   return envValue || defaultUrl;
@@ -55,7 +56,7 @@ async function initializeDatabase(persistence: DatabasePersistence) {
     ),
     MONOGRAPH_HOST: getHostUrl("MONOGRAPH_HOST", "https://monogr.ph"),
     NOTESNOOK_HOST: getHostUrl("NOTESNOOK_HOST", "https://notesnook.com"),
-    ...Config.get("serverUrls", {})
+    ...(HEAL_EMBED ? {} : Config.get("serverUrls", {}))
   });
 
   const storage = new NNStorage(
@@ -70,7 +71,7 @@ async function initializeDatabase(persistence: DatabasePersistence) {
     sqliteOptions: {
       dialect: (name, init) =>
         createDialect({
-          name: persistence === "memory" ? ":memory:" : name,
+          name: persistence === "memory" ? ":memory:" : (HEAL_EMBED ? "hn-" + window.__HEAL_NOTES_NAMESPACE__.slice(11,43) + "-" + name : name),
           encrypted: persistence !== "memory",
           async: !isFeatureSupported("opfs"),
           init,

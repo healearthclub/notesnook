@@ -46,6 +46,7 @@ const isThemeBuilder = process.env.THEME_BUILDER === "true";
 const isAnalyzing = process.env.ANALYZING === "true";
 
 export default defineConfig({
+  base: process.env.HEAL_EMBED === "true" ? "/notes-engine/" : "/",
   envPrefix: "NN_",
   root: "src/",
   publicDir: isThemeBuilder ? path.join(__dirname, "public") : "../public",
@@ -75,7 +76,8 @@ export default defineConfig({
     }
   },
   define: {
-    APP_TITLE: `"${isThemeBuilder ? "Notesnook Theme Builder" : "Notesnook"}"`,
+    HEAL_EMBED: process.env.HEAL_EMBED === "true",
+    APP_TITLE: `"${isThemeBuilder ? "Notesnook Theme Builder" : process.env.HEAL_EMBED === "true" ? "Heal Earth Notes" : "Notesnook"}"`,
     GIT_HASH: `"${gitHash}"`,
     APP_VERSION: `"${version}"`,
     PUBLIC_URL: `"${process.env.PUBLIC_URL || ""}"`,
@@ -140,7 +142,7 @@ export default defineConfig({
           }) as PluginOption
         ]
       : []),
-    ...((isThemeBuilder || isDesktop) && process.env.NODE_ENV === "production"
+    ...((isThemeBuilder || isDesktop || process.env.HEAL_EMBED === "true") && process.env.NODE_ENV === "production"
       ? []
       : [
           VitePWA({

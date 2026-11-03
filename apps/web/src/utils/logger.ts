@@ -32,7 +32,7 @@ async function initializeLogger() {
     {
       dialect: (name, init) =>
         createDialect({
-          name,
+          name: HEAL_EMBED ? "hn-" + window.__HEAL_NOTES_NAMESPACE__.slice(11,43) + "-" + name : name,
           init,
           async: !isFeatureSupported("opfs"),
           multiTab,

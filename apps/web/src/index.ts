@@ -51,7 +51,7 @@ initLocale().then(() => {
   });
 });
 
-if (!IS_DESKTOP_APP) {
+if (!IS_DESKTOP_APP && !HEAL_EMBED) {
   //   logger.info("Initializing service worker...");
 
   // If you want your app to work offline and load faster, you can change
