@@ -79,7 +79,7 @@ import { strings } from "@notesnook/intl";
 import { onPageVisibilityChanged } from "../../utils/page-visibility";
 import { Pane, SplitPane } from "../split-pane";
 import { TITLE_BAR_HEIGHT } from "../title-bar";
-import { isMobile } from "../../hooks/use-mobile";
+import { isMobile, useMobile } from "../../hooks/use-mobile";
 import { ConfirmDialog } from "../../dialogs/confirm";
 
 const PDFPreview = React.lazy(() => import("../pdf-preview"));
@@ -124,6 +124,7 @@ export async function saveContent(
 const deferredSave = debounceWithId(saveContent, 100);
 
 export default function TabsView() {
+  const mobileProperties = HEAL_EMBED && useMobile();
   const tabs = useEditorStore((store) => store.tabs);
   const documentPreview = useEditorStore((store) => store.documentPreview);
   const activeTabId = useEditorStore((store) => store.activeTabId);
@@ -140,6 +141,7 @@ export default function TabsView() {
         scope="editor"
         ref={dropRef}
         sx={{
+          position: "relative",
           bg: "background",
           flex: 1,
           overflow: "hidden",
@@ -228,7 +230,7 @@ export default function TabsView() {
               <TableOfContents sessionId={activeSession.id} />
             </Pane>
           ) : null}
-          {arePropertiesVisible &&
+          {!mobileProperties && arePropertiesVisible &&
             activeSession &&
             activeSession.type !== "new" &&
             activeSession.type !== "locked" && (
@@ -237,6 +239,12 @@ export default function TabsView() {
               </Pane>
             )}
         </SplitPane>
+        {mobileProperties && arePropertiesVisible && activeSession && activeSession.type !== "new" && activeSession.type !== "locked" && (
+          <Flex role="dialog" aria-label="Note properties" sx={{position:"absolute",top:TITLE_BAR_HEIGHT,bottom:0,left:0,right:0,zIndex:5,bg:"background",flexDirection:"column",overflow:"auto"}}>
+            <Button variant="secondary" onClick={()=>useEditorStore.getState().toggleProperties(false)}>Close properties</Button>
+            <Properties sessionId={activeSession.id}/>
+          </Flex>
+        )}
         <DropZone overlayRef={overlayRef} />
       </ScopedThemeProvider>
     </>
