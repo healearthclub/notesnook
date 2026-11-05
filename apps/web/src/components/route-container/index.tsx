@@ -109,6 +109,7 @@ function Header(props: RouteContainerProps) {
           input: {
             m: 0,
             p: "7.5px",
+            pr: HEAL_EMBED ? (query ? 60 : 32) : undefined,
             fontSize: "body",
             "::placeholder": {
               textAlign: "center"
@@ -147,13 +148,6 @@ function Header(props: RouteContainerProps) {
         ]}
         rightActions={[
           {
-            icon: ConsoleLine,
-            title: strings.commandPalette(),
-            testId: "search-command-palette",
-            hidden: !HEAL_EMBED,
-            onClick: () => { CommandPaletteDialog.show({ isCommandMode: true }); }
-          },
-          {
             icon: Close,
             id: "search-action-button",
             testId: "search-button",
@@ -171,7 +165,14 @@ function Header(props: RouteContainerProps) {
                   ...CREATE_BUTTON_MAP.reminders
                 }
               ]
-            : [])
+            : []),
+          {
+            icon: ConsoleLine,
+            title: strings.commandPalette(),
+            testId: "search-command-palette",
+            hidden: !HEAL_EMBED,
+            onClick: () => { CommandPaletteDialog.show({ isCommandMode: true }); }
+          },
         ]}
       />
     </Box>
