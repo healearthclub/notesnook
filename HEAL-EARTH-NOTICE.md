@@ -31,3 +31,5 @@ The two-tab browser fixture reproduced a further failure with independent Indexe
 Embedded UI cleanup (2026-11-05): omit empty-list tip panels and their extra action buttons in `components/placeholders/index.tsx`.
 
 Embedded command palette placement (2026-11-05): move the status-bar command button into the search field's right actions; retain its dialog action and add an accessible label.
+
+Startup update (2026-11-05): embedded builds use a static themed Notes layout placeholder instead of the logo splash and database decryption screen. They skip the separate persistent diagnostic-log SQLite database, retain console diagnostics, omit the unused synchronous-WASM prefetch, and emit a numeric startup timing for verification. Bootstrap still authenticates and acquires the account lock before opening private storage. Existing note/key databases and existing diagnostic data are retained.

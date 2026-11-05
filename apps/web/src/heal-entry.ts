@@ -3,6 +3,12 @@
 // browser storage during module initialization.
 async function start() {
   if (!HEAL_EMBED) return import("./index");
+  if (parent !== window) {
+    const hostStyle=parent.getComputedStyle(parent.document.documentElement);
+    document.documentElement.style.setProperty("--background",hostStyle.getPropertyValue("--surface"));
+    document.documentElement.style.setProperty("--separator",hostStyle.getPropertyValue("--line"));
+    document.body.style.background="var(--background)";
+  }
   const response = await fetch("/api/private-notes/context", {cache:"no-store", credentials:"same-origin"});
   if (!response.ok) throw new Error("Sign in to Heal Earth to open your private notes.");
   const {namespace} = await response.json();

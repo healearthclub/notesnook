@@ -18,7 +18,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import { initialize, logger as _logger, logManager } from "@notesnook/core";
-import { LogMessage, NoopLogger, format } from "@notesnook/logger";
+import { LogMessage, NoopLogger, Logger, format } from "@notesnook/logger";
 import { ZipFile } from "./streams/zip-stream";
 import { createWriteStream } from "./stream-saver";
 import { sanitizeFilename } from "@notesnook/common";
@@ -27,6 +27,12 @@ import { isFeatureSupported } from "./feature-check";
 
 let logger: typeof _logger = new NoopLogger();
 async function initializeLogger() {
+  if (HEAL_EMBED) {
+    // Persistent diagnostic logging is unnecessary in the host and adds a
+    // second WASM database to the startup path. Keep console diagnostics.
+    logger = new Logger().scope("heal-notes");
+    return;
+  }
   const multiTab = !!globalThis.SharedWorker && isFeatureSupported("opfs");
   await initialize(
     {

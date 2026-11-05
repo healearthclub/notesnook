@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { healLoadingMarkup } from "./heal-loading";
 import { createRoot } from "react-dom/client";
 import { init, Routes } from "./bootstrap";
 import { BaseThemeProvider } from "./components/theme-provider";
@@ -120,6 +121,8 @@ function RouteWrapper(props: {
       ? result.reason
       : new Error(result.reason);
   }
+  if (HEAL_EMBED && (result.status === "pending" || isMigrating))
+    return <div style={{position:"absolute",inset:0}} dangerouslySetInnerHTML={{__html:healLoadingMarkup}} />;
   if (result.status === "pending" || isMigrating)
     return (
       <div
@@ -154,6 +157,11 @@ function RouteWrapper(props: {
       </div>
     );
   performance.mark("render:app");
+  if (HEAL_EMBED && !document.documentElement.dataset.healNotesStartupMs) {
+    const elapsed=Math.round(performance.now());
+    document.documentElement.dataset.healNotesStartupMs=String(elapsed);
+    console.info("Heal Notes startup ms:",elapsed);
+  }
   return <Component route={routeProps?.route || "login:email"} />;
 }
 

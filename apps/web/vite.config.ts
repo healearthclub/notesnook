@@ -1,3 +1,4 @@
+import { healLoadingMarkup } from "./src/heal-loading";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
 
@@ -133,6 +134,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    ...(process.env.HEAL_EMBED === "true" ? [{name:"heal-notes-startup-shell",transformIndexHtml(html:string){return html.replace(/<div id="splash"[\s\S]*?<\/div>/, `<div id="splash">${healLoadingMarkup}</div>`);}}] : []),
     ...(isAnalyzing
       ? [
           visualizer({
@@ -187,7 +189,7 @@ export default defineConfig({
         // ...svgr options (https://react-svgr.com/docs/options/)
       }
     }),
-    ...(isDesktop
+    ...((isDesktop || process.env.HEAL_EMBED === "true")
       ? []
       : [
           prefetchPlugin({
