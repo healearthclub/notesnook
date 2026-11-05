@@ -32,14 +32,26 @@ async function start() {
   indexedDB.deleteDatabase = name => remove(namespace+name);
   storage.setItem("skipInitiation","true");
   storage.setItem("followSystemTheme","false");
-  const dark = new URLSearchParams(location.search).get("theme") === "dark";
+  const dark = parent !== window ? parent.document.documentElement.dataset.theme === "dark" || parent.document.documentElement.dataset.themeTone === "dark" : new URLSearchParams(location.search).get("theme") === "dark";
   storage.setItem("colorScheme",JSON.stringify(dark?"dark":"light"));
   await import("./index");
   window.addEventListener("message",async event=>{
     if(event.source!==parent || event.origin!==location.origin || event.data?.type!=="heal-notes-theme") return;
     const {useStore} = await import("./stores/theme-store");
-    useStore.getState().setColorScheme(event.data.dark?"dark":"light");
+    const {ThemeDark,ThemeLight} = await import("@notesnook/theme");
+    const theme=structuredClone(event.data.dark?ThemeDark:ThemeLight);
+    const c=event.data.colors;
+    if(c && ["surface","raised","ink","muted","soft","line","control","green"].every(k=>typeof c[k]==="string" && CSS.supports("color",c[k]))) {
+      for(const scope of Object.values(theme.scopes)) {
+        for(const [variant,values] of Object.entries(scope)) {
+          if(!values || typeof values!=="object" || variant==="error" || variant==="success")continue;
+          Object.assign(values,{background:variant==="selected"?c.control:variant==="secondary"?c.raised:c.surface,paragraph:c.ink,heading:c.ink,icon:c.muted,placeholder:c.muted,border:c.line,separator:c.line,hover:c.soft,accent:c.green,accentForeground:c.raised});
+        }
+      }
+    }
+    useStore.getState().setTheme(theme);
   });
+  parent.postMessage({type:"heal-notes-ready"},location.origin);
   // End this view if its authenticated account changes in another browser tab.
   const verify = async()=>{
     try {
