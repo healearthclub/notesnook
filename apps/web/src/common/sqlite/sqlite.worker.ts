@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { OperationQueue } from "./operation-queue";
 import type { SQLiteAPI, SQLiteCompatibleType } from "./sqlite-types";
 import { Factory, SQLITE_ROW, SQLITE_UTF8, SQLiteError } from "./sqlite-api";
 import { expose, transfer } from "comlink";
@@ -50,7 +51,13 @@ class _SQLiteWorker {
   name = "";
   async = false;
 
-  async open(name: string, options: SQLiteOptions) {
+  private operations = new OperationQueue();
+
+  open(name: string, options: SQLiteOptions) {
+    return this.operations.run(() => this.openInternal(name, options));
+  }
+
+  private async openInternal(name: string, options: SQLiteOptions) {
     if (this.db) {
       console.error("Database is already initialized", this.db);
       return;
@@ -180,7 +187,13 @@ class _SQLiteWorker {
     }
   }
 
-  async run<R>(
+  async run<R>(mode: RunMode, sql: string, parameters?: SQLiteCompatibleType[]): Promise<QueryResult<R>> {
+    // Key setup must remain able to run while other clients await decryption.
+    if (this.encrypted && !sql.startsWith("PRAGMA key")) await this.waitForDatabase();
+    return this.operations.run(() => this.runInternal<R>(mode, sql, parameters));
+  }
+
+  private async runInternal<R>(
     mode: RunMode,
     sql: string,
     parameters?: SQLiteCompatibleType[]
@@ -207,13 +220,19 @@ class _SQLiteWorker {
     };
   }
 
-  async close() {
+  close() {
+    return this.operations.run(() => this.closeInternal());
+  }
+
+  private async closeInternal() {
     if (!this.db) return;
 
-    for (const [_, prepared] of this.preparedStatements) {
-      await this.sqlite.finalize(prepared.stmt);
+    // Remove each handle before finalizing: a failed finalize still destroys it.
+    for (const [sql, prepared] of this.preparedStatements) {
+      this.preparedStatements.delete(sql);
+      try { await this.sqlite.finalize(prepared.stmt); }
+      catch (error) { console.error("Could not finalize SQLite statement", error); }
     }
-    this.preparedStatements.clear();
     await this.sqlite.close(this.db);
     await this.vfs?.close();
 
@@ -227,8 +246,12 @@ class _SQLiteWorker {
     return transfer(stream, [stream]);
   }
 
-  async delete(name: string, options: SQLiteOptions) {
-    await this.close();
+  delete(name: string, options: SQLiteOptions) {
+    return this.operations.run(() => this.deleteInternal(name, options));
+  }
+
+  private async deleteInternal(name: string, options: SQLiteOptions) {
+    await this.closeInternal();
     if (this.vfs) await this.vfs.delete();
     else await (await this.getVFS(name, options.async)).delete();
   }
