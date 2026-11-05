@@ -25,6 +25,7 @@ import { PasswordVisible, PasswordInvisible, Icon } from "../icons";
 import { useStore as useThemeStore } from "../../stores/theme-store";
 
 type Action = {
+  title?: string;
   id?: string;
   testId?: string;
   onClick?: React.MouseEventHandler<HTMLButtonElement>;
@@ -170,6 +171,8 @@ function Field(props: FieldProps) {
             {leftActions.map((action) => (
               <Button
                 id={action.id}
+                title={action.title}
+                aria-label={action.title}
                 key={action.testId}
                 type="button"
                 variant={"secondary"}
@@ -213,6 +216,8 @@ function Field(props: FieldProps) {
             {rightActions.map((action) => (
               <Button
                 id={action.id}
+                title={action.title}
+                aria-label={action.title}
                 key={action.testId}
                 type="button"
                 variant={"secondary"}

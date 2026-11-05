@@ -75,7 +75,7 @@ function StatusBar() {
         <Flex />
       ) : (
         <Flex sx={{ gap: "small" }}>
-          <Button
+          {!HEAL_EMBED && <Button
             variant="statusitem"
             onClick={() => CommandPaletteDialog.show({ isCommandMode: true })}
             sx={{
@@ -88,7 +88,7 @@ function StatusBar() {
             title={strings.commandPalette()}
           >
             <ConsoleLine size={12} />
-          </Button>
+          </Button>}
           {isLoggedIn ? (
             <>
               {user?.isEmailConfirmed ? (

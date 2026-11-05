@@ -29,3 +29,5 @@ SQLite lifecycle fix (2026-11-05): serialize connection open, query, close and d
 The two-tab browser fixture reproduced a further failure with independent IndexedDB SQLite connections. Embedded bootstrap now acquires an exclusive account-specific Web Lock before importing upstream storage code. A second view displays a recoverable message and opens no database; closing the owning view releases the lock. This deliberately limits the local embedded workspace to one active view per account.
 
 Embedded UI cleanup (2026-11-05): omit empty-list tip panels and their extra action buttons in `components/placeholders/index.tsx`.
+
+Embedded command palette placement (2026-11-05): move the status-bar command button into the search field's right actions; retain its dialog action and add an accessible label.

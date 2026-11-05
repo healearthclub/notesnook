@@ -17,9 +17,10 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { CommandPaletteDialog } from "../../dialogs/command-palette";
 import { PropsWithChildren, useEffect, useRef } from "react";
 import { Box } from "@theme-ui/components";
-import { Close, AddReminder, Menu } from "../icons";
+import { Close, AddReminder, Menu, ConsoleLine } from "../icons";
 import { useStore as useSearchStore } from "../../stores/search-store";
 import useMobile from "../../hooks/use-mobile";
 import { debounce, usePromise } from "@notesnook/common";
@@ -145,6 +146,13 @@ function Header(props: RouteContainerProps) {
           }
         ]}
         rightActions={[
+          {
+            icon: ConsoleLine,
+            title: strings.commandPalette(),
+            testId: "search-command-palette",
+            hidden: !HEAL_EMBED,
+            onClick: () => { CommandPaletteDialog.show({ isCommandMode: true }); }
+          },
           {
             icon: Close,
             id: "search-action-button",
