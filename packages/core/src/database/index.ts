@@ -352,7 +352,7 @@ export async function initializeDatabase<Schema>(
     return db;
   } catch (e) {
     logger.error(e, "Failed to initialized database.");
-    await db.destroy();
+    try { await db.destroy(); } catch (cleanupError) { console.error("Database cleanup failed", cleanupError); }
     throw e;
   }
 }
