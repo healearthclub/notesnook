@@ -27,3 +27,5 @@ Theme integration update (2026-11-05): embedded startup reads the host theme, th
 SQLite lifecycle fix (2026-11-05): serialize connection open, query, close and deletion within each WASM worker; remove prepared statement handles before finalization so failed cleanup cannot reuse a stale pointer. Shutdown now waits for active queries, and repeated close requests cannot finalize the same statement concurrently. Regression tests exercise the actual worker with a delayed SQLite API fixture and repeated shutdowns. No database names, encryption keys or stored note data are changed.
 
 The two-tab browser fixture reproduced a further failure with independent IndexedDB SQLite connections. Embedded bootstrap now acquires an exclusive account-specific Web Lock before importing upstream storage code. A second view displays a recoverable message and opens no database; closing the owning view releases the lock. This deliberately limits the local embedded workspace to one active view per account.
+
+Embedded UI cleanup (2026-11-05): omit empty-list tip panels and their extra action buttons in `components/placeholders/index.tsx`.

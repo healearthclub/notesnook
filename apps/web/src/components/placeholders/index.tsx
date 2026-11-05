@@ -30,6 +30,8 @@ function Placeholder(props: PlaceholderProps) {
   const syncStatus = useAppStore((store) => store.syncStatus);
   const isFirstSync = useAppStore((store) => store.lastSynced === 0);
 
+  if (HEAL_EMBED) return null;
+
   if (isFirstSync && syncStatus.key === "syncing" && context === "notes") {
     return (
       <Flex
