@@ -125,7 +125,7 @@ export function hardNavigate(route: string, search?: string) {
 export function makeURL(route: string, hash?: string, search?: string) {
   const url = new URL(route, window.location.origin);
   if (HEAL_EMBED) {
-    const target = new URL("/notes-engine/index.html", window.location.origin);
+    const target = new URL(HEAL_NATIVE ? "/notes" : "/notes-engine/index.html", window.location.origin);
     target.search = search || url.search || getQueryString();
     target.searchParams.set("route", url.pathname);
     target.hash = url.hash || hash || getCurrentHash();

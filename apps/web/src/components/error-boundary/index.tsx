@@ -104,7 +104,7 @@ export function ErrorBoundary(props: PropsWithChildren) {
 }
 
 export function ErrorComponent({ error, resetErrorBoundary }: FallbackProps) {
-  const help = getErrorHelp({ error, resetErrorBoundary });
+  const help = HEAL_NATIVE ? undefined : getErrorHelp({ error, resetErrorBoundary });
 
   return (
     <BaseThemeProvider

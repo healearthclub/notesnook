@@ -72,7 +72,7 @@ async function initializeDatabase(persistence: DatabasePersistence) {
     localAttachmentsKey = saved ? JSON.parse(saved) : await storage.generateCryptoKey(generatePassword());
     if (!saved) await useKeyStore.getState().setValue("localAttachmentsKey", JSON.stringify(localAttachmentsKey));
   }
-  const multiTab = !!globalThis.SharedWorker && isFeatureSupported("opfs");
+  const multiTab = !!globalThis.SharedWorker && (HEAL_NATIVE || isFeatureSupported("opfs"));
   database.setup({
     localAttachmentsKey,
     sqliteOptions: {

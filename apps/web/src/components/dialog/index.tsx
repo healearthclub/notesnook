@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import {getNativeContext} from "../../heal-native-runtime";
 import { Button, ButtonProps, Flex, Text } from "@theme-ui/components";
 import { SxProp } from "@theme-ui/core";
 import React from "react";
@@ -26,7 +27,7 @@ import { Close, Loading } from "../icons";
 import { FlexScrollContainer } from "../scroll-container";
 import { ScopedThemeProvider } from "../theme-provider";
 
-ReactModal.setAppElement("#root");
+ReactModal.setAppElement(HEAL_NATIVE ? getNativeContext().shadow.getElementById("root")! : "#root");
 
 type DialogButtonProps = ButtonProps & {
   onClick?: () => void;
@@ -63,6 +64,9 @@ function BaseDialog(props: React.PropsWithChildren<DialogProps>) {
   return (
     <ReactModal
       isOpen={props.isOpen || false}
+      bodyOpenClassName={HEAL_NATIVE ? null : undefined}
+      htmlOpenClassName={HEAL_NATIVE ? null : undefined}
+      {...(HEAL_NATIVE ? {parentSelector:()=>getNativeContext().surface} : {})}
       onRequestClose={props.onClose}
       shouldCloseOnEsc
       shouldReturnFocusAfterClose

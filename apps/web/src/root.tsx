@@ -95,7 +95,7 @@ export async function startApp(children?: React.ReactNode) {
   }
 }
 
-function RouteWrapper(props: {
+export function RouteWrapper(props: {
   Component: (props: AuthProps) => JSX.Element;
   path: Routes;
   routeProps: AuthProps | null;

@@ -86,7 +86,7 @@ class _DialogManager {
     const dialogs = document.querySelectorAll(
       ".ReactModalPortal,[data-react-modal-body-trap]"
     );
-    dialogs.forEach((elem) => elem.remove());
+    if(!HEAL_NATIVE)dialogs.forEach((elem) => elem.remove());
 
     for (const close of this.openedDialogs.values()) {
       close();

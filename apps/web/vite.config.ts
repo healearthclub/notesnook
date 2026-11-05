@@ -1,3 +1,4 @@
+import { healNativePlugin } from "./heal-native-plugin";
 import { healLoadingMarkup } from "./src/heal-loading";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
@@ -39,6 +40,7 @@ const gitHash = (() => {
   }
 })();
 // const appVersion = version.replaceAll(".", "").replace("-beta", "");
+const isNative = process.env.HEAL_NATIVE === "true";
 const isBeta = version.includes("-beta");
 const isTesting =
   process.env.TEST === "true" || process.env.NODE_ENV === "development";
@@ -47,18 +49,20 @@ const isThemeBuilder = process.env.THEME_BUILDER === "true";
 const isAnalyzing = process.env.ANALYZING === "true";
 
 export default defineConfig({
-  base: process.env.HEAL_EMBED === "true" ? "/notes-engine/" : "/",
+  base: isNative ? "/notes-engine/native/" : process.env.HEAL_EMBED === "true" ? "/notes-engine/" : "/",
   envPrefix: "NN_",
   root: "src/",
   publicDir: isThemeBuilder ? path.join(__dirname, "public") : "../public",
   build: {
     target: isDesktop ? "esnext" : "modules",
-    outDir: "../build",
+    outDir: isNative ? "../build-native" : "../build",
+    ...(isNative ? {lib:{entry:path.resolve(__dirname,"src/heal-native.tsx"),formats:["es"] as ("es")[],fileName:()=>"native.js",cssFileName:"native"}} : {}),
     minify: "esbuild",
     cssMinify: true,
     emptyOutDir: true,
     sourcemap: !isDesktop,
     rollupOptions: {
+      external: isNative ? (id:string,importer?:string)=>{if(id==="react-dom/client"&&importer&&!importer.includes("/node_modules/")&&(importer.includes("/apps/web/src/")||importer.includes("/packages/editor/")))return false;return /^react(?:\/.*)?$/.test(id)||/^react-dom(?:\/.*)?$/.test(id);} : [],
       output: {
         plugins: [emitEditorStyles()],
         assetFileNames: "assets/[name]-[hash:12][extname]",
@@ -78,6 +82,7 @@ export default defineConfig({
   },
   define: {
     HEAL_EMBED: process.env.HEAL_EMBED === "true",
+    HEAL_NATIVE: isNative,
     APP_TITLE: `"${isThemeBuilder ? "Notesnook Theme Builder" : process.env.HEAL_EMBED === "true" ? "Heal Earth Notes" : "Notesnook"}"`,
     GIT_HASH: `"${gitHash}"`,
     APP_VERSION: `"${version}"`,
@@ -134,6 +139,7 @@ export default defineConfig({
     }
   },
   plugins: [
+    ...(isNative ? [healNativePlugin()] : []),
     ...(process.env.HEAL_EMBED === "true" ? [{name:"heal-notes-startup-shell",transformIndexHtml(html:string){return html.replace(/<div id="splash"[\s\S]*?<\/div>/, `<div id="splash">${healLoadingMarkup}</div>`);}}] : []),
     ...(isAnalyzing
       ? [

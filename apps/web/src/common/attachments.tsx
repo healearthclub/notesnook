@@ -1,3 +1,4 @@
+import {renderNativePortal,unmountNativePortal} from "../heal-native-portals";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
 
@@ -146,15 +147,15 @@ export async function previewImageAttachment(attachment: Attachment) {
     return showToast("error", strings.imagePreviewFailed());
   }
 
-  ReactDOM.render(
+  const render=HEAL_NATIVE ? renderNativePortal : (container:HTMLElement,node:React.ReactNode)=>ReactDOM.render(node,container);
+  render(container,
     <ScopedThemeProvider>
       <Lightbox
         image={dataurl}
         onClose={() => {
-          ReactDOM.unmountComponentAtNode(container);
+          if(HEAL_NATIVE)unmountNativePortal(container);else ReactDOM.unmountComponentAtNode(container);
         }}
       />
-    </ScopedThemeProvider>,
-    container
+    </ScopedThemeProvider>
   );
 }

@@ -1,3 +1,4 @@
+import {getNativeContext} from "../heal-native-runtime";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
 
@@ -82,8 +83,12 @@ const actions: Partial<
   openKeyboardShortcuts: () => KeyboardShortcutsDialog.show({})
 };
 
+let nativeKeyMapRegistered=false;
 export function registerKeyMap() {
-  hotkeys.filter = function () {
+  if(HEAL_NATIVE && nativeKeyMapRegistered)return;
+  if(HEAL_NATIVE)nativeKeyMapRegistered=true;
+  hotkeys.filter = function (event) {
+    if (HEAL_NATIVE) {const c=getNativeContext();return c.active && event.composedPath().includes(c.shadow.host);}
     return true;
   };
 
