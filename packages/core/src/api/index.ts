@@ -91,6 +91,7 @@ type EventSourceConstructor = new (
   init: EventSourceInit & { headers?: Record<string, string> }
 ) => EventSource;
 type Options = {
+  localAttachmentsKey?: import("@notesnook/crypto").SerializedKey;
   sqliteOptions: SQLiteOptions;
   storage: IStorage;
   eventsource?: EventSourceConstructor;

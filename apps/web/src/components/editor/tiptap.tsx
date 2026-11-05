@@ -208,7 +208,7 @@ function TipTap(props: TipTapProps) {
       callout: !!features?.callout?.isAllowed,
       outlineList: !!features?.outlineList?.isAllowed,
       taskList: !!features?.taskList?.isAllowed,
-      insertAttachment: !!useUserStore.getState().isLoggedIn,
+      insertAttachment: HEAL_EMBED || !!useUserStore.getState().isLoggedIn,
       exportTableAsCsv: !!features?.exportTableAsCsv?.isAllowed,
       importCsvToTable: !!features?.importCsvToTable?.isAllowed
     },

@@ -29,6 +29,10 @@ export class Compressor implements ICompressor {
     this.inititalized = true;
   }
   async compress(data: string) {
+    if (HEAL_EMBED) {
+      const stream = new Blob([data]).stream().pipeThrough(new CompressionStream("gzip"));
+      return Buffer.from(await new Response(stream).arrayBuffer()).toString("base64");
+    }
     if (IS_DESKTOP_APP && desktop)
       return await desktop.compress.gzip.query({ data, level: 6 });
 
@@ -42,6 +46,10 @@ export class Compressor implements ICompressor {
   }
 
   async decompress(data: string) {
+    if (HEAL_EMBED) {
+      const stream = new Blob([Buffer.from(data, "base64")]).stream().pipeThrough(new DecompressionStream("gzip"));
+      return await new Response(stream).text();
+    }
     if (IS_DESKTOP_APP && desktop)
       return await desktop.compress.gunzip.query(data);
 

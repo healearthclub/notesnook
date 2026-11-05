@@ -713,6 +713,7 @@ class UserManager {
   }
 
   async getAttachmentsKey() {
+    if (this.db.options?.localAttachmentsKey) return this.db.options.localAttachmentsKey;
     return this.getUserKey("attachmentsKey", {
       generateKey: () => this.db.crypto().generateRandomKey(),
       errorContext: "attachments encryption key"

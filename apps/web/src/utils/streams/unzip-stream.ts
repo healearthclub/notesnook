@@ -30,7 +30,13 @@ configure({ Deflate, Inflate });
 
 export async function* createUnzipIterator(file: File) {
   const reader = new ZipReader(file.stream());
+  let count = 0, expanded = 0;
   for await (const entry of reader.getEntriesGenerator()) {
+    expanded += entry.uncompressedSize;
+    if (HEAL_EMBED && (++count > 10000 || expanded > 512 * 1024 * 1024 || entry.filename.split("/").includes("..") || entry.filename.includes(String.fromCharCode(92)))) {
+      await reader.close();
+      throw new Error("This archive exceeds private Notes import limits or contains an invalid path.");
+    }
     yield new ZipEntry(entry);
   }
   await reader.close();

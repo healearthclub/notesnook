@@ -359,7 +359,7 @@ export default class Backup {
     }
 
     const total = await this.db.attachments.all.count();
-    if (total > 0 && user && user.attachmentsKey) {
+    if (total > 0 && ((user && user.attachmentsKey) || this.db.options?.localAttachmentsKey)) {
       yield {
         type: "file",
         path: `attachments/.attachments_key`,

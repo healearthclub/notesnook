@@ -109,7 +109,7 @@ export async function findServiceWorker(): Promise<{
   sw?: ServiceWorker;
   scope?: string;
 }> {
-  if (!("serviceWorker" in navigator)) return {};
+  if (HEAL_EMBED || !("serviceWorker" in navigator)) return {};
 
   const registrations =
     (await navigator.serviceWorker?.getRegistrations()) || [];

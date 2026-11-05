@@ -43,7 +43,7 @@
     "@trpc/react-query": "10.45.2",
     "@zip.js/zip.js": "^2.7.62",
     "async-mutex": "0.5.0",
-    "axios": "^1.7.9",
+    "axios": "^1.21.0",
     "clipboard-polyfill": "4.1.0",
     "comlink": "^4.3.1",
     "cronosjs": "^1.7.1",
@@ -159,5 +159,9 @@
     "name": "Streetwriters (Private) Limited",
     "email": "support@streetwriters.co",
     "url": "https://streetwriters.co"
+  },
+  "overrides": {
+    "markdown-it": "^14.3.3",
+    "linkify-it": "^5.0.2"
   }
 }

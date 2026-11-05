@@ -626,7 +626,7 @@ export function Editor(props: EditorProps) {
           }
         }}
         onInsertAttachment={async (type) => {
-          if (!useUserStore.getState().isLoggedIn) {
+          if (!HEAL_EMBED && !useUserStore.getState().isLoggedIn) {
             ConfirmDialog.show({
               title: strings.notLoggedIn(),
               message: strings.loginToUploadAttachments(),

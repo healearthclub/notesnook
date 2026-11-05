@@ -31,6 +31,7 @@ import { checkFeature } from "../../common";
 import { AttachFilesDialog } from "../../dialogs/attach-files-dialog";
 import { strings } from "@notesnook/intl";
 import Queue from "p-queue";
+import {validateLocalAttachment} from "../../utils/local-attachment-policy";
 
 export async function insertAttachments(
   type: string,
@@ -102,6 +103,7 @@ export async function attachFiles(
       report({ type: "encrypting", index: i });
 
       try {
+        if (HEAL_EMBED) await validateLocalAttachment(file);
         const allowed = await checkFeature("fileSize", {
           value: file.size,
           type: "toast"

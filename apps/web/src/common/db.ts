@@ -66,8 +66,15 @@ async function initializeDatabase(persistence: DatabasePersistence) {
   );
   await storage.migrate();
 
+  let localAttachmentsKey: import("@notesnook/crypto").SerializedKey | undefined;
+  if (HEAL_EMBED) {
+    const saved = await useKeyStore.getState().getValue("localAttachmentsKey");
+    localAttachmentsKey = saved ? JSON.parse(saved) : await storage.generateCryptoKey(generatePassword());
+    if (!saved) await useKeyStore.getState().setValue("localAttachmentsKey", JSON.stringify(localAttachmentsKey));
+  }
   const multiTab = !!globalThis.SharedWorker && isFeatureSupported("opfs");
   database.setup({
+    localAttachmentsKey,
     sqliteOptions: {
       dialect: (name, init) =>
         createDialect({

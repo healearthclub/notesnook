@@ -80,7 +80,8 @@ function isCredentialWithSecret(
 const defaultSecrets = {
   databaseKey: new ArrayBuffer(0),
   lockAfter: 0,
-  userEncryptionKey: ""
+  userEncryptionKey: "",
+  localAttachmentsKey: ""
 };
 type Secrets = typeof defaultSecrets;
 

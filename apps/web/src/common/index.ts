@@ -217,6 +217,7 @@ export async function importBackup() {
 }
 
 export async function restoreBackupFile(backupFile: File) {
+  if (HEAL_EMBED && (backupFile.size === 0 || backupFile.size > 100 * 1024 * 1024)) throw new Error("Choose a nonempty Notes backup smaller than 100 MB.");
   const isLegacy = !backupFile.name.endsWith(".nnbackupz");
 
   if (isLegacy) {
@@ -240,7 +241,7 @@ export async function restoreBackupFile(backupFile: File) {
     );
 
     let skipAttachments = false;
-    if (!useUserStore.getState().isLoggedIn) {
+    if (!HEAL_EMBED && !useUserStore.getState().isLoggedIn) {
       let hasAttachments = false;
       for await (const entry of createUnzipIterator(backupFile)) {
         if (
