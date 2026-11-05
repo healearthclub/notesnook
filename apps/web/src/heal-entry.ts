@@ -12,6 +12,16 @@ async function start() {
     const testKey=await crypto.subtle.generateKey({name:"AES-KW",length:256},false,["wrapKey","unwrapKey"]);
     structuredClone(testKey);
   } catch {throw new Error("This browser cannot persist private note keys. Use a current browser with site storage enabled.");}
+  // IndexedDB SQLite must have one owning worker per account. Hold the lock
+  // for this document's lifetime; navigating away releases it automatically.
+  if (!navigator.locks) throw new Error("This browser cannot safely coordinate Notes storage. Use a current browser.");
+  await new Promise<void>((resolve,reject)=>{
+    navigator.locks.request(namespace+"workspace",{ifAvailable:true},lock=>{
+      if(!lock){reject(new Error("Notes is already open in another tab. Close that Notes view, then reload this page to continue."));return;}
+      resolve();
+      return new Promise<void>(()=>{});
+    }).catch(reject);
+  });
   window.__HEAL_NOTES_NAMESPACE__ = namespace;
   window.__HEAL_NOTES_LOCAL__ = true;
   const real = window.localStorage;
