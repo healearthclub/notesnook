@@ -333,14 +333,16 @@ function NavigationMenu({
               gap: 1
             }}
           >
-            <svg
-              style={{
-                width: 20,
-                height: 20
-              }}
-            >
-              <use href="#full-logo" />
-            </svg>
+            {!HEAL_EMBED && (
+              <svg
+                style={{
+                  width: 20,
+                  height: 20
+                }}
+              >
+                <use href="#full-logo" />
+              </svg>
+            )}
 
             <Text
               variant="heading"
@@ -350,7 +352,7 @@ function NavigationMenu({
                 display: "block"
               }}
             >
-              {HEAL_EMBED ? "Heal Earth Notes" : "Notesnook"}
+              {HEAL_EMBED ? "Notes" : "Notesnook"}
             </Text>
           </Flex>
           <Flex sx={{ gap: "small", alignItems: "center" }}>
