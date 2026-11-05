@@ -136,6 +136,7 @@
   },
   "overrides": {
     "markdown-it": "^14.3.3",
-    "linkify-it": "^5.0.2"
+    "linkify-it": "^5.0.2",
+    "js-yaml": "^3.15.2"
   }
 }
