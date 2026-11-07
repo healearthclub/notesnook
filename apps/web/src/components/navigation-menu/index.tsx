@@ -367,7 +367,7 @@ function NavigationMenu({
                 <ExpandSidebar size={13} color="icon" />
               </Button>
             ) : null}
-            <NavigationDropdown />
+            {!HEAL_EMBED && <NavigationDropdown />}
           </Flex>
         </Flex>
       )}
