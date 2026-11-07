@@ -22,7 +22,7 @@ export function healNativePlugin(): Plugin {
     transform(code, id) {
       const file = id.split("?")[0];
       if (
-        !/\.[jt]sx?$/.test(file) ||
+        !/\.[cm]?[jt]sx?$/.test(file) ||
         file === runtime ||
         file.includes("/node_modules/") ||
         file.includes("/common/sqlite/") ||
@@ -33,7 +33,8 @@ export function healNativePlugin(): Plugin {
       if (
         !file.includes("/apps/web/src/") &&
         !file.includes("/packages/editor/") &&
-        !file.includes("/packages/theme/")
+        !file.includes("/packages/theme/") &&
+        !file.includes("/packages/ui/")
       )
         return;
       const names = [

@@ -60,6 +60,8 @@ export function InsertBlock(props: ToolProps) {
     <>
       <Button
         ref={buttonRef}
+        aria-label={strings.chooseBlockToInsert()}
+        title={strings.chooseBlockToInsert()}
         variant="secondary"
         sx={{
           p: 1,

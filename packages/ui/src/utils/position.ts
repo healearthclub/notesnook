@@ -66,10 +66,23 @@ export function getPosition(
     yAnchor
   } = options || {};
 
-  const { x, y, width, height, actualX, actualY } =
+  let { x, y, width, height, actualX, actualY } =
     target === "mouse" || target === null
       ? mousePosition
       : getElementPosition(target, isTargetAbsolute);
+
+  // Fixed popups inside an embedded shadow workspace use its containing
+  // block, while DOM rectangles and pointer events use viewport coordinates.
+  const root = parent.getRootNode();
+  if (typeof ShadowRoot !== "undefined" && root instanceof ShadowRoot) {
+    const origin = root.host.getBoundingClientRect();
+    actualX -= origin.x;
+    actualY -= origin.y;
+    if (isTargetAbsolute || target === "mouse" || target === null) {
+      x -= origin.x;
+      y -= origin.y;
+    }
+  }
 
   const elementWidth = element.offsetWidth;
   const elementHeight = element.offsetHeight;

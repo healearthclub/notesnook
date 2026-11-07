@@ -49,6 +49,14 @@ function _PopupPresenter(props: PropsWithChildren<PopupPresenterProps>) {
     ...restProps
   } = props;
 
+  const popupContainer = container || document.body;
+  const root = popupContainer.getRootNode();
+  const shadow =
+    typeof ShadowRoot !== "undefined" && root instanceof ShadowRoot
+      ? root
+      : undefined;
+  const appElement = shadow?.getElementById("root") || popupContainer;
+
   const contentRef = useRef<HTMLDivElement>();
   const observerRef = useRef<ResizeObserver>();
 
@@ -126,7 +134,8 @@ function _PopupPresenter(props: PropsWithChildren<PopupPresenterProps>) {
           // is going out of the window.
 
           const windowHeight = document.body.clientHeight - 20;
-          if (y + height > windowHeight) {
+          const localY = y - (shadow?.host.getBoundingClientRect().y || 0);
+          if (localY + height > windowHeight) {
             popup.style.top = windowHeight - height + "px";
           }
         }
@@ -134,7 +143,7 @@ function _PopupPresenter(props: PropsWithChildren<PopupPresenterProps>) {
       }
     });
     observerRef.current.observe(popup, { box: "border-box" });
-  }, [repositionPopup, position, isMobile]);
+  }, [repositionPopup, position, isMobile, shadow]);
 
   return (
     <Modal
@@ -142,8 +151,10 @@ function _PopupPresenter(props: PropsWithChildren<PopupPresenterProps>) {
       className={"popup-presenter"}
       role="menu"
       isOpen={isOpen}
-      appElement={container || document.body}
-      parentSelector={() => container || document.body}
+      appElement={appElement}
+      parentSelector={() => popupContainer}
+      bodyOpenClassName={shadow ? null : undefined}
+      htmlOpenClassName={shadow ? null : undefined}
       shouldCloseOnEsc
       shouldReturnFocusAfterClose
       shouldCloseOnOverlayClick
@@ -153,7 +164,7 @@ function _PopupPresenter(props: PropsWithChildren<PopupPresenterProps>) {
       onRequestClose={onClose}
       portalClassName={"popup-presenter-portal"}
       onAfterOpen={(obj) => {
-        Modal.setAppElement(container || document.body);
+        Modal.setAppElement(appElement);
         if (!obj || !position) return;
         repositionPopup(position);
 
