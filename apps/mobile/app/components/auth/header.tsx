@@ -58,6 +58,7 @@ export const AuthHeader = (props: { welcome?: boolean }) => {
 
         {!props.welcome ? null : (
           <Button
+            testID="auth-use-offline"
             title={strings.skipAndGoToApp()}
             onPress={() => {
               presentDialog({

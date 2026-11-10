@@ -269,6 +269,10 @@ export const useEditor = (
     }: SavePayload) => {
       if (currentNotes.current[id as string]?.readonly || readonly) return;
 
+      // A new, empty editor is not a note yet. In particular, an initial
+      // empty title event must not start a save that can never succeed.
+      if (!id && !title && isContentInvalid(data)) return;
+
       if (sourceNoteId && id && sourceNoteId !== id) {
         DatabaseLogger.error(
           new Error(
@@ -278,6 +282,7 @@ export const useEditor = (
         return;
       }
 
+      let saveTimer: ReturnType<typeof setTimeout> | undefined;
       try {
         if (id && !(await db.notes?.note(id))) {
           if (useTabStore.getState().getNoteIdForTab(tabId) === id) {
@@ -363,7 +368,7 @@ export const useEditor = (
           );
         }, 50);
 
-        const saveTimer = setTimeout(() => {
+        saveTimer = setTimeout(() => {
           DatabaseLogger.log(`Note save timeout: ${id}...`);
           ToastManager.show({
             message: strings.savingNoteTakingTooLong(),
@@ -512,6 +517,10 @@ export const useEditor = (
       } catch (e) {
         console.error(e);
         DatabaseLogger.error(e as Error);
+      } finally {
+        // Failed/rejected writes must not leave a warning scheduled after a
+        // later edit has already saved successfully.
+        if (saveTimer !== undefined) clearTimeout(saveTimer);
       }
     },
     [commands, editorSessionHistory, postMessage, readonly, reset]

@@ -7,7 +7,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>Make Note</string>
+	<string>Add to ohai</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -57,7 +57,7 @@
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>ReactNativeQuickSQLite_AppGroup</key>
-	<string>group.org.streetwriters.notesnook</string>
+	<string>group.org.healearth.ohai</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>MaterialCommunityIcons.ttf</string>
@@ -70,6 +70,6 @@
 		<string>UIInterfaceOrientationLandscapeRight</string>
 	</array>
 	<key>appGroupId</key>
-	<string>group.org.streetwriters.notesnook</string>
+	<string>group.org.healearth.ohai</string>
 </dict>
 </plist>

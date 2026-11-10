@@ -56,7 +56,12 @@ test("codeblocks should get highlighted on init", async () => {
     }
   });
 
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await vi.waitFor(
+    () => {
+      expect(editorElement.querySelectorAll(".token.keyword")).toHaveLength(2);
+    },
+    { timeout: 3000 }
+  );
 
   expect(editorElement.outerHTML).toMatchSnapshot();
 });

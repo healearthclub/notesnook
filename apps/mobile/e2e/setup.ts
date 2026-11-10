@@ -1,7 +1,7 @@
 import { device } from "detox";
 
 beforeAll(async () => {
-  await device.launchApp();
+  await device.launchApp({ launchArgs: { detoxEnableSynchronization: 0 } });
 });
 
 export {};
