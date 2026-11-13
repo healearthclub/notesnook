@@ -23,7 +23,6 @@ import { View } from "react-native";
 import { db } from "../../common/database";
 import NotebookScreen from "../../screens/notebook";
 import { TaggedNotes } from "../../screens/notes/tagged";
-import Navigation from "../../services/navigation";
 import { useMenuStore } from "../../stores/use-menu-store";
 import { useSettingStore } from "../../stores/use-setting-store";
 import { SideMenuItem } from "../../utils/menu-items";
@@ -48,21 +47,26 @@ export const PinnedSection = React.memo(
       }
     }, [loading, setMenuPins]);
 
-    const onPress = React.useCallback((item: SideMenuItem) => {
-      const data = item.data as Notebook | Tag;
-      if (data.type === "notebook") {
-        NotebookScreen.navigate(data);
-      } else if (data.type === "tag") {
-        TaggedNotes.navigate(data);
-      }
-      setImmediate(() => {
-        Navigation.closeDrawer();
-      });
-    }, []);
+    const onPress = React.useCallback(
+      (item: SideMenuItem, dismissMenu: () => void) => {
+        const data = item.data as Notebook | Tag;
+        if (data.type === "notebook") {
+          NotebookScreen.navigate(data);
+        } else if (data.type === "tag") {
+          TaggedNotes.navigate(data);
+        }
+        setImmediate(() => {
+          dismissMenu();
+        });
+      },
+      []
+    );
 
     const onLongPress = React.useCallback((item: SideMenuItem) => {
       if (useSideBarDraggingStore.getState().dragging) return;
-      Properties.present(item.data as Notebook, false, [getDefaultDragAction()]);
+      Properties.present(item.data as Notebook, false, [
+        getDefaultDragAction()
+      ]);
     }, []);
 
     const menuItems = useMemo(

@@ -28,6 +28,7 @@ import { fileURLToPath } from "url";
 
 const EXTRA_ICON_NAMES = [
   "menu",
+  "folder-outline",
   "lock-open-outline",
   "key-outline",
   "pin-off-outline",
@@ -46,6 +47,10 @@ const EXTRA_ICON_NAMES = [
   "view-list-outline",
   "view-list",
   "tab-plus",
+  "note-text",
+  "note-text-outline",
+  "compass",
+  "compass-outline",
   "server",
   "play",
   "pause",

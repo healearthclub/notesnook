@@ -22,6 +22,7 @@ import React from "react";
 import { FloatingButton } from "../../components/container/floating-button";
 import DelayLayout from "../../components/delay-layout";
 import { Header } from "../../components/header";
+import { NotesListLayout } from "../../features/notes/list-layout";
 import List from "../../components/list";
 import SelectionHeader from "../../components/selection-header";
 import { useNavigationFocus } from "../../hooks/use-navigation-focus";
@@ -55,52 +56,26 @@ export const Reminders = ({
 
   return (
     <>
-      <Header
-        renderedInRoute={route.name}
-        title={strings.routes[route.name]()}
-        canGoBack={false}
-        hasSearch={true}
-        onSearch={() => {
-          Navigation.push("Search", {
-            placeholder: strings.searchInRoute(route.name),
-            type: "reminder",
-            title: route.name,
-            route: route.name
-          });
-        }}
-        id={route.name}
-        onPressDefaultRightButton={async () => {
-          const reminderFeature = await isFeatureAvailable("activeReminders");
-          if (!reminderFeature.isAllowed) {
-            ToastManager.show({
-              type: "info",
-              message: reminderFeature.error,
-              actionText: strings.upgrade(),
-              func: () => {
-                PaywallSheet.present(reminderFeature);
-              }
-            });
-            return;
-          }
-          AddReminder.present();
-        }}
-      />
-
-      <DelayLayout wait={loading}>
-        <List
-          data={reminders}
-          dataType="reminder"
-          groupType="reminders"
-          headerTitle={strings.routes[route.name]()}
-          renderedInRoute="Reminders"
-          loading={loading}
-          placeholder={{
-            title: strings.yourReminders(),
-            paragraph: strings.remindersEmpty(),
-            button: strings.setReminder(),
-            action: async () => {
-              const reminderFeature =
-                await isFeatureAvailable("activeReminders");
+      <NotesListLayout
+        header={
+          <Header
+            renderedInRoute={route.name}
+            title={strings.routes[route.name]()}
+            canGoBack={false}
+            hasSearch={true}
+            onSearch={() => {
+              Navigation.push("Search", {
+                placeholder: strings.searchInRoute(route.name),
+                type: "reminder",
+                title: route.name,
+                route: route.name
+              });
+            }}
+            id={route.name}
+            onPressDefaultRightButton={async () => {
+              const reminderFeature = await isFeatureAvailable(
+                "activeReminders"
+              );
               if (!reminderFeature.isAllowed) {
                 ToastManager.show({
                   type: "info",
@@ -113,30 +88,65 @@ export const Reminders = ({
                 return;
               }
               AddReminder.present();
-            },
-            loading: strings.loadingReminders()
-          }}
-        />
-
-        <FloatingButton
-          onPress={async () => {
-            const reminderFeature = await isFeatureAvailable("activeReminders");
-            if (!reminderFeature.isAllowed) {
-              ToastManager.show({
-                type: "info",
-                message: reminderFeature.error,
-                actionText: strings.upgrade(),
-                func: () => {
-                  PaywallSheet.present(reminderFeature);
+            }}
+          />
+        }
+      >
+        <DelayLayout wait={loading}>
+          <List
+            data={reminders}
+            dataType="reminder"
+            groupType="reminders"
+            headerTitle={strings.routes[route.name]()}
+            renderedInRoute="Reminders"
+            loading={loading}
+            placeholder={{
+              title: strings.yourReminders(),
+              paragraph: strings.remindersEmpty(),
+              button: strings.setReminder(),
+              action: async () => {
+                const reminderFeature = await isFeatureAvailable(
+                  "activeReminders"
+                );
+                if (!reminderFeature.isAllowed) {
+                  ToastManager.show({
+                    type: "info",
+                    message: reminderFeature.error,
+                    actionText: strings.upgrade(),
+                    func: () => {
+                      PaywallSheet.present(reminderFeature);
+                    }
+                  });
+                  return;
                 }
-              });
-              return;
-            }
-            AddReminder.present();
-          }}
-          alwaysVisible
-        />
-      </DelayLayout>
+                AddReminder.present();
+              },
+              loading: strings.loadingReminders()
+            }}
+          />
+
+          <FloatingButton
+            onPress={async () => {
+              const reminderFeature = await isFeatureAvailable(
+                "activeReminders"
+              );
+              if (!reminderFeature.isAllowed) {
+                ToastManager.show({
+                  type: "info",
+                  message: reminderFeature.error,
+                  actionText: strings.upgrade(),
+                  func: () => {
+                    PaywallSheet.present(reminderFeature);
+                  }
+                });
+                return;
+              }
+              AddReminder.present();
+            }}
+            alwaysVisible
+          />
+        </DelayLayout>
+      </NotesListLayout>
 
       <SelectionHeader id={route.name} items={reminders} type="reminder" />
     </>

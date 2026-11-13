@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { useThemeColors } from "@notesnook/theme";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
+import { usesNotesTabLayout } from "../../features/notes/list-route";
 import { notesnook } from "../../../e2e/test.ids";
 import { TTip, useTip } from "../../services/tip-manager";
 import { RouteParams } from "../../stores/use-navigation-store";
@@ -35,6 +36,7 @@ export type PlaceholderData = {
   title: string;
   paragraph: string;
   button?: string;
+  hideTip?: boolean;
   action?: () => void;
   loading?: string;
   type?: string;
@@ -81,18 +83,24 @@ export const Empty = React.memo(function Empty({
     >
       {!loading ? (
         <>
-          <Tip
-            color={color}
-            tip={
-              screen !== "Search"
-                ? tip || ({ text: () => placeholder?.paragraph } as TTip)
-                : ({ text: () => placeholder?.paragraph } as TTip)
-            }
-            style={{
-              backgroundColor: "transparent",
-              paddingHorizontal: 0
-            }}
-          />
+          {placeholder?.hideTip ? null : usesNotesTabLayout(screen) ? (
+            <Paragraph color={colors.primary.paragraph}>
+              {placeholder?.paragraph}
+            </Paragraph>
+          ) : (
+            <Tip
+              color={color}
+              tip={
+                screen !== "Search"
+                  ? tip || ({ text: () => placeholder?.paragraph } as TTip)
+                  : ({ text: () => placeholder?.paragraph } as TTip)
+              }
+              style={{
+                backgroundColor: "transparent",
+                paddingHorizontal: 0
+              }}
+            />
+          )}
           {placeholder?.button && (
             <Button
               testID={notesnook.buttons.add}

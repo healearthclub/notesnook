@@ -1086,6 +1086,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-framework",
+					AuthenticationServices,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_MAIN_BUNDLE_ID)";
 				PRODUCT_NAME = Notesnook;
@@ -1192,6 +1194,8 @@
 					"$(inherited)",
 					"-ObjC",
 					"-lc++",
+					"-framework",
+					AuthenticationServices,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(IOS_MAIN_BUNDLE_ID)";
 				PRODUCT_NAME = Notesnook;

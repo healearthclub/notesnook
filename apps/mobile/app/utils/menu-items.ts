@@ -19,7 +19,6 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { Item, ItemType } from "@notesnook/core";
 import { Monographs } from "../screens/notes/monographs";
-import Navigation from "../services/navigation";
 
 export type SideMenuItem = {
   dataType?: ItemType | "monograph";
@@ -27,7 +26,7 @@ export type SideMenuItem = {
   title: string;
   id: string;
   icon: string;
-  onPress?: (item: SideMenuItem) => void;
+  onPress?: (item: SideMenuItem, dismissMenu: () => void) => void;
   onLongPress?: (item: SideMenuItem) => void;
   type: string;
 };
@@ -71,8 +70,8 @@ export const MenuItemsList: SideMenuItem[] = [
     id: "Monographs",
     title: "Monographs",
     icon: "text-box-multiple-outline",
-    onPress: () => {
-      Navigation.closeDrawer();
+    onPress: (_, dismissMenu) => {
+      dismissMenu();
       Monographs.navigate();
     },
     type: "side-menu-item"

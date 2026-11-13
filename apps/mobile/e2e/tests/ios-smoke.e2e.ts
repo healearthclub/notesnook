@@ -1,4 +1,7 @@
 import { by, device, element, expect, waitFor, web } from "detox";
+import { once } from "node:events";
+import { createServer } from "node:http";
+import type { AddressInfo } from "node:net";
 
 async function waitForWeb(check: () => Promise<unknown>) {
   const deadline = Date.now() + 15000;
@@ -38,7 +41,7 @@ async function tapUntilVisible(
 }
 
 describe("iOS local notes", () => {
-  it("creates a note and reopens its saved content after restarting", async () => {
+  it("keeps a saved note and a web page open across tab switches", async () => {
     if (device.getPlatform() !== "ios") return;
     await device.launchApp({
       newInstance: true,
@@ -50,6 +53,9 @@ describe("iOS local notes", () => {
       .toBeVisible()
       .withTimeout(30000);
     await element(by.text("Get started")).tap();
+    await waitFor(element(by.id("auth-google")))
+      .toBeVisible()
+      .withTimeout(30000);
     await waitFor(element(by.id("auth-use-offline")))
       .toBeVisible()
       .withTimeout(30000);
@@ -124,5 +130,34 @@ describe("iOS local notes", () => {
       expect(web().element(by.web.className("ProseMirror"))).toHaveText(body)
     );
     await device.takeScreenshot("ios-fork-persisted-note");
+
+    const server = createServer((_request, response) => {
+      response.writeHead(200, {
+        "Content-Type": "text/html",
+        Connection: "close"
+      });
+      response.end('<!doctype html><h1 id="title">Browser smoke test</h1>');
+    });
+    try {
+      server.listen(0, "127.0.0.1");
+      await once(server, "listening");
+      const { port } = server.address() as AddressInfo;
+      const notesTab = element(by.id("main-tab-notes"));
+      const browserTab = element(by.id("main-tab-browser"));
+      const address = element(by.id("browser-address"));
+      await tapUntilVisible(browserTab, address);
+      await address.tap();
+      await address.typeText(`http://localhost:${port}/`);
+      await address.tapReturnKey();
+
+      const heading = web(by.id("browser-webview")).element(by.web.id("title"));
+      await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
+      await tapUntilVisible(notesTab, element(by.id("editor.id")));
+      await tapUntilVisible(browserTab, address);
+      await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
+      await device.takeScreenshot("ios-notes-browser-tabs");
+    } finally {
+      server.close();
+    }
   });
 });

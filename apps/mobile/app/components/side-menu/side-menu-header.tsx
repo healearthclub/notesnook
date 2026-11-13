@@ -16,10 +16,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+import { strings } from "@notesnook/intl";
 import { useThemeColors } from "@notesnook/theme";
 import React from "react";
 import { Image, View } from "react-native";
 import { NOTESNOOK_LOGO_SVG } from "../../assets/images/assets";
+import SettingsService from "../../services/settings";
+import { useThemeStore } from "../../stores/use-theme-store";
 import { useUserStore } from "../../stores/use-user-store";
 import { AppFontSize } from "../../utils/size";
 import { DefaultAppStyles } from "../../utils/styles";
@@ -30,6 +33,7 @@ import { Pressable } from "../ui/pressable";
 import { SvgView } from "../ui/svg";
 import Heading from "../ui/typography/heading";
 import { useSideBarDraggingStore } from "./dragging-store";
+import { useSideMenuSheetDismiss } from "./sheet-dismiss";
 import SyncStatusButton from "./sync-status-button";
 
 const SettingsIcon = () => {
@@ -70,13 +74,37 @@ const SettingsIcon = () => {
   );
 };
 
-export const SideMenuHeader = (props: { rightButtons?: IconButtonProps[] }) => {
+export function SideMenuThemeButton({ inHeader = false }) {
   const { colors, isDark } = useThemeColors();
+  const size = inHeader ? 40 : 28;
+
+  return (
+    <IconButton
+      onPress={() => {
+        SettingsService.set({ useSystemTheme: false });
+        useThemeStore.getState().setColorScheme();
+      }}
+      style={{ width: size, height: size }}
+      top={10}
+      testID="sidebar-theme-button"
+      accessibilityRole="switch"
+      accessibilityLabel={strings.darkMode()}
+      accessibilityState={{ checked: isDark }}
+      color={colors.primary.icon}
+      name={isDark ? "weather-night" : "weather-sunny"}
+      size={inHeader ? AppFontSize.lg : AppFontSize.lg - 2}
+    />
+  );
+}
+
+export const SideMenuHeader = (props: { rightButtons?: IconButtonProps[] }) => {
+  const { colors } = useThemeColors();
+  const inSheet = Boolean(useSideMenuSheetDismiss());
   return (
     <View
       style={{
         flexDirection: "row",
-        justifyContent: "space-between",
+        justifyContent: inSheet ? "flex-end" : "space-between",
         alignItems: "center",
         borderBottomWidth: 1,
         borderBottomColor: colors.primary.border,
@@ -84,26 +112,28 @@ export const SideMenuHeader = (props: { rightButtons?: IconButtonProps[] }) => {
         paddingHorizontal: DefaultAppStyles.GAP
       }}
     >
-      <View
-        style={{
-          flexDirection: "row",
-          gap: DefaultAppStyles.GAP_SMALL,
-          alignItems: "center"
-        }}
-      >
+      {inSheet ? null : (
         <View
           style={{
-            backgroundColor: "black",
-            width: 28,
-            height: 28,
-            borderRadius: 10
+            flexDirection: "row",
+            gap: DefaultAppStyles.GAP_SMALL,
+            alignItems: "center"
           }}
         >
-          <SvgView width={28} height={28} src={NOTESNOOK_LOGO_SVG} />
-        </View>
+          <View
+            style={{
+              backgroundColor: "black",
+              width: 28,
+              height: 28,
+              borderRadius: 10
+            }}
+          >
+            <SvgView width={28} height={28} src={NOTESNOOK_LOGO_SVG} />
+          </View>
 
-        <Heading size={AppFontSize.lg}>Notesnook</Heading>
-      </View>
+          <Heading size={AppFontSize.lg}>Notesnook</Heading>
+        </View>
+      )}
 
       <View
         style={{
@@ -125,6 +155,7 @@ export const SideMenuHeader = (props: { rightButtons?: IconButtonProps[] }) => {
           />
         ))}
         <SyncStatusButton />
+        {inSheet ? <SideMenuThemeButton inHeader /> : null}
         <SettingsIcon />
       </View>
     </View>

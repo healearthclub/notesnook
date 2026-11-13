@@ -293,7 +293,7 @@ AppNavigation.displayName = "AppNavigation";
 
 let Intro: any = null;
 let Auth: any = null;
-let FluidPanelsView: any = null;
+let MainScreen: any = null;
 let LinkNotebooks: any = null;
 let MoveNotebook: any = null;
 let MoveNotes: any = null;
@@ -412,10 +412,8 @@ export const RootNavigation = () => {
         <RootStack.Screen
           name="FluidPanelsView"
           getComponent={() => {
-            FluidPanelsView =
-              FluidPanelsView ||
-              require("../navigation/fluid-panels-view").default;
-            return FluidPanelsView;
+            MainScreen = MainScreen || require("./main-tabs").default;
+            return MainScreen;
           }}
           initialParams={{
             initialPage:

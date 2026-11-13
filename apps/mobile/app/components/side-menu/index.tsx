@@ -28,7 +28,6 @@ import { presentSheet, ToastManager } from "../../services/event-manager";
 import Navigation from "../../services/navigation";
 import { useSettingStore } from "../../stores/use-setting-store";
 import { useTagStore } from "../../stores/use-tag-store";
-import { useThemeStore } from "../../stores/use-theme-store";
 import { deleteItems } from "../../utils/functions";
 import { AppFontSize } from "../../utils/size";
 import { DefaultAppStyles } from "../../utils/styles";
@@ -39,6 +38,7 @@ import { IconButton } from "../ui/icon-button";
 import { Pressable } from "../ui/pressable";
 import Paragraph from "../ui/typography/paragraph";
 import { SideMenuHome } from "./side-menu-home";
+import { SideMenuThemeButton } from "./side-menu-header";
 import { SideMenuNotebooks } from "./side-menu-notebooks";
 import { SideMenuTags } from "./side-menu-tags";
 import {
@@ -51,6 +51,10 @@ import SettingsService from "../../services/settings";
 import { isFeatureAvailable } from "@notesnook/common";
 import PaywallSheet from "../sheets/paywall";
 import useGlobalSafeAreaInsets from "../../hooks/use-global-safe-area-insets";
+import {
+  NOTES_NAVIGATION_DIALOG_CONTEXT,
+  useSideMenuSheetDismiss
+} from "./sheet-dismiss";
 
 /**
  * Simple Tab View Implementation for the Side bar
@@ -144,8 +148,8 @@ const SimpleTabView = ({
             {loadedKeysRef.current.has(route.key)
               ? getSceneForRoute(route)
               : navigationState.index === routeIndex
-                ? getSceneForRoute(route)
-                : null}
+              ? getSceneForRoute(route)
+              : null}
           </View>
         ))}
       </View>
@@ -162,17 +166,19 @@ const renderScene = createSceneMap({
   settings: () => null
 });
 
-export const SideMenu = React.memo(
-  function SideMenu() {
-    const { colors } = useThemeColors();
-    const insets = useGlobalSafeAreaInsets();
-    const appLanguage = useSettingStore(
-      (state) => state.settings.appLanguage
-    );
-    const [index, setIndex] = React.useState(
-      SettingsService.getProperty("defaultSidebarTab")
-    );
-    const routes = React.useMemo<SimpleRoute[]>(() => [
+export const SideMenu = React.memo(function SideMenu({
+  inSheet = false
+}: {
+  inSheet?: boolean;
+}) {
+  const { colors } = useThemeColors();
+  const insets = useGlobalSafeAreaInsets();
+  const appLanguage = useSettingStore((state) => state.settings.appLanguage);
+  const [index, setIndex] = React.useState(
+    SettingsService.getProperty("defaultSidebarTab")
+  );
+  const routes = React.useMemo<SimpleRoute[]>(
+    () => [
       {
         key: "home",
         title: strings.home()
@@ -185,32 +191,34 @@ export const SideMenu = React.memo(
         key: "tags",
         title: strings.tags()
       }
-    ], [appLanguage]);
+    ],
+    [appLanguage]
+  );
 
-    return (
-      <View
-        style={{
-          flex: 1,
-          backgroundColor: colors.primary.background,
-          paddingTop: insets.top,
-          paddingBottom: insets.bottom
-        }}
-      >
-        <SimpleTabView
-          navigationState={{ index, routes }}
-          renderTabBar={(props) => <TabBar {...props} />}
-          renderScene={renderScene}
-          onIndexChange={setIndex}
-        />
-      </View>
-    );
-  }
-);
+  return (
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: colors.primary.background,
+        paddingTop: inSheet ? 0 : insets.top,
+        paddingBottom: inSheet ? 0 : insets.bottom
+      }}
+    >
+      <SimpleTabView
+        navigationState={{ index, routes }}
+        renderTabBar={(props) => <TabBar {...props} />}
+        renderScene={renderScene}
+        onIndexChange={setIndex}
+      />
+    </View>
+  );
+});
 
 const TabBar = (props: SimpleTabBarProps) => {
+  const dismissSheet = useSideMenuSheetDismiss();
   useSettingStore((state) => state.settings.appLanguage);
   const dragging = useSideBarDraggingStore((state) => state.dragging);
-  const { colors, isDark } = useThemeColors();
+  const { colors } = useThemeColors();
   const groupOptions = useGroupOptions(
     props.navigationState.index === 1 ? "notebooks" : "tags"
   );
@@ -240,7 +248,8 @@ const TabBar = (props: SimpleTabBarProps) => {
       style={{
         flexDirection: "row",
         width: "100%",
-        justifyContent: "space-between",
+        justifyContent:
+          dismissSheet && !isSelectionEnabled ? "center" : "space-between",
         backgroundColor: colors.primary.background,
         paddingHorizontal: DefaultAppStyles.GAP,
         paddingVertical: DefaultAppStyles.GAP_SMALL,
@@ -319,6 +328,7 @@ const TabBar = (props: SimpleTabBarProps) => {
                           return;
                         }
                         const notebooks = await db.notebooks.all.items(ids);
+                        dismissSheet?.();
                         Navigation.navigate("MoveNotebook", {
                           selectedNotebooks: notebooks
                         });
@@ -434,6 +444,9 @@ const TabBar = (props: SimpleTabBarProps) => {
 
               <View
                 style={{
+                  position: dismissSheet ? "absolute" : undefined,
+                  right: dismissSheet ? DefaultAppStyles.GAP_SMALL : undefined,
+                  alignSelf: dismissSheet ? "center" : undefined,
                   flexDirection: "row",
                   alignItems: "center",
                   gap: DefaultAppStyles.GAP_SMALL
@@ -456,7 +469,13 @@ const TabBar = (props: SimpleTabBarProps) => {
                             return;
                           }
 
-                          AddNotebookSheet.present();
+                          AddNotebookSheet.present(
+                            undefined,
+                            undefined,
+                            dismissSheet
+                              ? NOTES_NAVIGATION_DIALOG_CONTEXT
+                              : undefined
+                          );
                         } else {
                           const tagsFeature = await isFeatureAvailable("tags");
                           if (!tagsFeature.isAllowed) {
@@ -529,26 +548,8 @@ const TabBar = (props: SimpleTabBarProps) => {
                   </>
                 ) : null}
 
-                {props.navigationState.index === 0 ? (
-                  <>
-                    <IconButton
-                      onPress={() => {
-                        SettingsService.set({
-                          useSystemTheme: false
-                        });
-                        useThemeStore.getState().setColorScheme();
-                      }}
-                      style={{
-                        width: 28,
-                        height: 28
-                      }}
-                      top={10}
-                      testID="sidebar-theme-button"
-                      color={colors.primary.icon}
-                      name={isDark ? "weather-night" : "weather-sunny"}
-                      size={AppFontSize.lg - 2}
-                    />
-                  </>
+                {props.navigationState.index === 0 && !dismissSheet ? (
+                  <SideMenuThemeButton />
                 ) : null}
               </View>
             </>

@@ -18,10 +18,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
 import React, { useState } from "react";
+import { Platform } from "react-native";
+import {
+  GoogleScreen,
+  googleScreenBackground
+} from "../../features/login/google-screen";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useNavigationFocus } from "../../hooks/use-navigation-focus";
 import { Toast } from "../toast";
-import { AuthMode, initialAuthMode } from "./common";
+import { AuthMode, hideAuth, initialAuthMode } from "./common";
 import { Login } from "./login";
 import { Signup } from "./signup";
 import { useThemeColors } from "@notesnook/theme";
@@ -32,15 +37,26 @@ const Auth = ({ navigation, route }: NavigationProps<"Auth">) => {
     route?.params?.mode || AuthMode.login
   );
   const { colors } = useThemeColors();
-  initialAuthMode.current = route?.params.mode || AuthMode.login;
+  initialAuthMode.current = route?.params?.mode || AuthMode.login;
   useNavigationFocus(navigation, {});
 
   return (
     <SafeAreaView
-      style={{ flex: 1, backgroundColor: colors.primary.background }}
+      style={{
+        flex: 1,
+        backgroundColor:
+          Platform.OS === "ios"
+            ? googleScreenBackground
+            : colors.primary.background
+      }}
     >
-      {currentAuthMode !== AuthMode.login &&
-      currentAuthMode !== AuthMode.welcomeLogin ? (
+      {Platform.OS === "ios" ? (
+        <GoogleScreen
+          welcomeSignup={currentAuthMode === AuthMode.welcomeSignup}
+          close={() => hideAuth(route.params?.context)}
+        />
+      ) : currentAuthMode !== AuthMode.login &&
+        currentAuthMode !== AuthMode.welcomeLogin ? (
         <Signup
           changeMode={(mode) => setCurrentAuthMode(mode)}
           welcome={initialAuthMode.current === AuthMode.welcomeSignup}

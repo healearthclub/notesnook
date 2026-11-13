@@ -64,6 +64,7 @@ import {
 import { fluidTabsRef } from "../../../utils/global-refs";
 import { sleep } from "../../../utils/time";
 import { unlockVault } from "../../../utils/unlock-vault";
+import { rememberOpenedNote } from "../../../features/notes/recent-notes";
 import { onNoteCreated } from "../../notes/common";
 import Commands from "./commands";
 import { SessionHistory } from "./session-history";
@@ -390,6 +391,7 @@ export const useEditor = (
           }
 
           if (!note && id) {
+            rememberOpenedNote(id);
             editorSessionHistory.newSession(id);
             useTabStore.getState().updateTab(tabId, {
               session: {
@@ -631,6 +633,7 @@ export const useEditor = (
           }
 
           const item = event.item;
+          if (!event.refresh) rememberOpenedNote(item.id);
 
           const currentTab = useTabStore
             .getState()

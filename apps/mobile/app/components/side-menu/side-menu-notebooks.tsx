@@ -24,7 +24,6 @@ import React, { useEffect, useState } from "react";
 import { TextInput, View } from "react-native";
 import { db } from "../../common/database";
 import NotebookScreen from "../../screens/notebook";
-import Navigation from "../../services/navigation";
 import { TreeItem } from "../../stores/create-notebook-tree-stores";
 import useNavigationStore from "../../stores/use-navigation-store";
 import { useNotebooks } from "../../stores/use-notebook-store";
@@ -41,6 +40,7 @@ import {
 } from "./stores";
 import { LegendList } from "@legendapp/list";
 import { useRelationStore } from "../../stores/use-relation-store";
+import { useSideMenuDismiss } from "./sheet-dismiss";
 useSideMenuNotebookSelectionStore.setState({
   multiSelect: true
 });
@@ -196,6 +196,7 @@ export const SideMenuNotebooks = () => {
 
 const NotebookItemWrapper = React.memo(
   ({ item, index }: { item: TreeItem; index: number }) => {
+    const dismissMenu = useSideMenuDismiss();
     const expanded = useSideMenuNotebookExpandedStore(
       (state) => state.expanded[item.notebook.id]
     );
@@ -269,7 +270,7 @@ const NotebookItemWrapper = React.memo(
           focused={focused}
           onPress={() => {
             NotebookScreen.navigate(item.notebook, false);
-            Navigation.closeDrawer();
+            dismissMenu();
           }}
           onLongPress={() => {
             Properties.present(item.notebook, false, [

@@ -40,6 +40,8 @@ import useGlobalSafeAreaInsets from "../../hooks/use-global-safe-area-insets";
 
 interface FloatingButtonProps {
   onPress: () => void;
+  accessibilityLabel?: string;
+  inline?: boolean;
   color?: string;
   shouldShow?: boolean;
   alwaysVisible?: boolean;
@@ -53,6 +55,8 @@ interface FloatingButtonProps {
 
 const FloatingButton = ({
   onPress,
+  accessibilityLabel,
+  inline = false,
   color,
   alwaysVisible = false,
   icon,
@@ -128,7 +132,63 @@ const FloatingButton = ({
     };
   }, [deviceMode, animate, hideOnKeyboard, keyboardHeight, insets.bottom]);
 
-  return deviceMode !== "mobile" && !alwaysVisible ? null : (
+  if (deviceMode !== "mobile" && !alwaysVisible) return null;
+
+  const scale = inline ? 0.85 : 1;
+  const buttonSize = Math.max(
+    inline ? 44 : 0,
+    normalize(size === "small" ? 40 : 60) * scale
+  );
+  const borderRadius = (size === "small" ? 15 : 20) * scale;
+  const button = (
+    <TouchableOpacity
+      testID={testID || notesnook.buttons.add}
+      accessibilityLabel={accessibilityLabel}
+      accessibilityRole="button"
+      activeOpacity={0.95}
+      style={{
+        ...getElevationStyle(5),
+        borderRadius,
+        borderTopWidth: 0,
+        borderBottomWidth: 0,
+        borderLeftWidth: 0,
+        borderRightWidth: 0,
+        backgroundColor: colors.primary.background
+      }}
+      onPress={onPress}
+    >
+      <View
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          height: buttonSize,
+          width: buttonSize,
+          backgroundColor: color
+            ? RGB_Linear_Shade(0.87, hexToRGBA(color))
+            : colors.primary.shade,
+          borderRadius
+        }}
+      >
+        <Icon
+          name={
+            icon
+              ? icon
+              : route.name === "Notebooks"
+              ? "notebook-plus"
+              : route.name === "Trash"
+              ? "delete"
+              : "plus"
+          }
+          color={color || colors.primary.accent}
+          size={(size === "small" ? AppFontSize.xl : AppFontSize.xxxl) * scale}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (inline) return selectionMode ? null : button;
+
+  return (
     <Animated.View
       style={[
         {
@@ -144,47 +204,7 @@ const FloatingButton = ({
       ]}
       pointerEvents="box-none"
     >
-      <TouchableOpacity
-        testID={testID || notesnook.buttons.add}
-        activeOpacity={0.95}
-        style={{
-          ...getElevationStyle(5),
-          borderRadius: size === "small" ? 15 : 20,
-          borderTopWidth: 0,
-          borderBottomWidth: 0,
-          borderLeftWidth: 0,
-          borderRightWidth: 0,
-          backgroundColor: colors.primary.background
-        }}
-        onPress={onPress}
-      >
-        <View
-          style={{
-            alignItems: "center",
-            justifyContent: "center",
-            height: normalize(size === "small" ? 40 : 60),
-            width: normalize(size === "small" ? 40 : 60),
-            backgroundColor: color
-              ? RGB_Linear_Shade(0.87, hexToRGBA(color))
-              : colors.primary.shade,
-            borderRadius: size === "small" ? 15 : 20
-          }}
-        >
-          <Icon
-            name={
-              icon
-                ? icon
-                : route.name === "Notebooks"
-                  ? "notebook-plus"
-                  : route.name === "Trash"
-                    ? "delete"
-                    : "plus"
-            }
-            color={color || colors.primary.accent}
-            size={size === "small" ? AppFontSize.xl : AppFontSize.xxxl}
-          />
-        </View>
-      </TouchableOpacity>
+      {button}
     </Animated.View>
   );
 };

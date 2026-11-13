@@ -39,6 +39,7 @@ import { DefaultAppStyles } from "../../utils/styles";
 import { Pressable } from "../ui/pressable";
 import Paragraph from "../ui/typography/paragraph";
 import { useSideBarDraggingStore } from "./dragging-store";
+import { useSideMenuDismiss } from "./sheet-dismiss";
 import { useRelationStore } from "../../stores/use-relation-store";
 
 export function MenuItem({
@@ -53,6 +54,7 @@ export function MenuItem({
   renderIcon?: (item: SideMenuItem, size: number) => React.ReactNode;
 }) {
   const [itemCount, setItemCount] = useState(0);
+  const dismissMenu = useSideMenuDismiss();
   const { colors } = useThemeColors();
   const isFocused = useNavigationStore(
     (state) => state.focusedRouteId === item.id
@@ -125,8 +127,8 @@ export function MenuItem({
 
   const _onPress = () => {
     if (useSideBarDraggingStore.getState().dragging) return;
-    if (item.onPress) return item.onPress(item);
-    Navigation.closeDrawer();
+    if (item.onPress) return item.onPress(item, dismissMenu);
+    dismissMenu();
     if (useNavigationStore.getState().currentRoute !== item.id) {
       Navigation.navigate(item.id as keyof RouteParams, {
         canGoBack: false
@@ -174,8 +176,8 @@ export function MenuItem({
               item.icon === "crown"
                 ? colors.static.yellow
                 : isFocused
-                  ? colors.selected.icon
-                  : colors.secondary.icon
+                ? colors.selected.icon
+                : colors.secondary.icon
             }
             size={AppFontSize.md}
           />

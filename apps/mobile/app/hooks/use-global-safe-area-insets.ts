@@ -16,11 +16,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+import { createContext, useContext } from "react";
 import { useSettingStore } from "../stores/use-setting-store";
+
+export const BottomInsetOverride = createContext<number | undefined>(undefined);
 
 const useGlobalSafeAreaInsets = () => {
   const insets = useSettingStore((state) => state.insets);
-  return insets;
+  const bottom = useContext(BottomInsetOverride);
+  return bottom === undefined ? insets : { ...insets, bottom };
 };
 
 export default useGlobalSafeAreaInsets;

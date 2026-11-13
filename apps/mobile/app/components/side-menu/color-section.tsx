@@ -22,7 +22,6 @@ import React, { useEffect, useMemo } from "react";
 import { View } from "react-native";
 import { db } from "../../common/database";
 import { ColoredNotes } from "../../screens/notes/colored";
-import Navigation from "../../services/navigation";
 import { useMenuStore } from "../../stores/use-menu-store";
 import { useSettingStore } from "../../stores/use-setting-store";
 import { SideMenuItem } from "../../utils/menu-items";
@@ -51,12 +50,15 @@ export const ColorSection = React.memo(
       }
     }, [loading, setColorNotes]);
 
-    const onPress = React.useCallback((item: SideMenuItem) => {
-      ColoredNotes.navigate(item.data as Color, false);
-      setImmediate(() => {
-        Navigation.closeDrawer();
-      });
-    }, []);
+    const onPress = React.useCallback(
+      (item: SideMenuItem, dismissMenu: () => void) => {
+        ColoredNotes.navigate(item.data as Color, false);
+        setImmediate(() => {
+          dismissMenu();
+        });
+      },
+      []
+    );
 
     const onLongPress = React.useCallback((item: SideMenuItem) => {
       if (useSideBarDraggingStore.getState().dragging) return;

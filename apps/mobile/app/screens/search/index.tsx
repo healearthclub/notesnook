@@ -25,9 +25,13 @@ import {
 } from "@notesnook/core";
 import { strings } from "@notesnook/intl";
 import React, { useEffect, useRef, useState } from "react";
+import { KeyboardAvoidingView } from "react-native";
+import { RecentNotesList } from "../../features/notes/recent-notes-list";
+import { usesNotesTabLayout } from "../../features/notes/list-route";
 import { DatabaseLogger, db } from "../../common/database";
 import List from "../../components/list";
 import SelectionHeader from "../../components/selection-header";
+import useGlobalSafeAreaInsets from "../../hooks/use-global-safe-area-insets";
 import { useNavigationFocus } from "../../hooks/use-navigation-focus";
 import { ToastManager, eSubscribeEvent } from "../../services/event-manager";
 import { NavigationProps } from "../../services/navigation";
@@ -35,7 +39,9 @@ import useNavigationStore from "../../stores/use-navigation-store";
 import { eGroupOptionsUpdated, eOnRefreshSearch } from "../../utils/events";
 import { SearchBar } from "./search-bar";
 export const Search = ({ route, navigation }: NavigationProps<"Search">) => {
+  const { top } = useGlobalSafeAreaInsets();
   const [results, setResults] = useState<VirtualizedGrouping<Item>>();
+  const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [searchStatus, setSearchStatus] = useState<string>();
   const currentQuery = useRef<string>(undefined);
@@ -111,6 +117,7 @@ export const Search = ({ route, navigation }: NavigationProps<"Search">) => {
         }
         setLoading(false);
       } catch (e) {
+        if (currentQuery.current === query) setLoading(false);
         ToastManager.error(e as Error);
         DatabaseLogger.error(e);
       }
@@ -135,40 +142,71 @@ export const Search = ({ route, navigation }: NavigationProps<"Search">) => {
     ];
 
     return () => {
+      clearTimeout(timer.current);
       subs.forEach((sub) => sub?.unsubscribe());
     };
   }, [onSearch, route.params?.type]);
 
-  return (
+  const searchAtBottom = usesNotesTabLayout(route.params.route);
+  const notesSearch = searchAtBottom && route.params.route === "Notes";
+  const searchBar = (
+    <SearchBar
+      rounded={notesSearch}
+      onChangeText={(query) => {
+        const value = notesSearch ? query.trim() : query;
+        if (notesSearch) {
+          setQuery(value);
+          currentQuery.current = value;
+          setResults(undefined);
+          setSearchStatus(undefined);
+          setLoading(!!value);
+        }
+        clearTimeout(timer.current);
+        timer.current = setTimeout(() => {
+          onSearch(value);
+        }, 500);
+      }}
+    />
+  );
+  const content = (
     <>
-      <SearchBar
-        onChangeText={(query) => {
-          clearTimeout(timer.current);
-          timer.current = setTimeout(() => {
-            onSearch(query);
-          }, 500);
-        }}
-        loading={loading}
-      />
-      <List
-        data={results}
-        dataType={route.params?.type}
-        renderedInRoute={route.name}
-        groupType="search"
-        loading={loading}
-        placeholder={{
-          title: route.name,
-          paragraph: searchStatus || strings.searchInRoute(route.params?.title),
-          loading: strings.searchingFor(currentQuery.current as string)
-        }}
-      />
+      {!searchAtBottom ? searchBar : null}
+      {notesSearch && !query ? (
+        <RecentNotesList />
+      ) : (
+        <List
+          data={results}
+          dataType={route.params?.type}
+          renderedInRoute={route.name}
+          groupType="search"
+          loading={loading}
+          placeholder={{
+            title: route.name,
+            paragraph:
+              searchStatus || strings.searchInRoute(route.params?.title),
+            loading: strings.searchingFor(currentQuery.current as string)
+          }}
+        />
+      )}
+      {searchAtBottom ? searchBar : null}
       <SelectionHeader
         id={route.name}
-        items={results}
+        items={notesSearch && !query ? undefined : results}
         type={route.params?.type}
         renderedInRoute={route.name}
       />
     </>
+  );
+  return searchAtBottom ? (
+    <KeyboardAvoidingView
+      behavior="padding"
+      keyboardVerticalOffset={top}
+      style={{ flex: 1 }}
+    >
+      {content}
+    </KeyboardAvoidingView>
+  ) : (
+    content
   );
 };
 

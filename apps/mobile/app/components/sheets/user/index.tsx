@@ -30,6 +30,10 @@ import { SyncStatus, useUserStore } from "../../../stores/use-user-store";
 import { getObfuscatedEmail } from "../../../utils/functions";
 import { AppFontSize, defaultBorderRadius } from "../../../utils/size";
 import { DefaultAppStyles } from "../../../utils/styles";
+import {
+  loadOhaiAccount,
+  useOhaiAccount
+} from "../../../features/login/google-session";
 import { AuthMode } from "../../auth/common";
 import { Card } from "../../list/card";
 import AppIcon from "../../ui/AppIcon";
@@ -53,6 +57,11 @@ export const UserSheet = () => {
       state.lastSynced
     ]
   );
+
+  const ohaiEmail = useOhaiAccount((state) => state.email);
+  React.useEffect(() => {
+    void loadOhaiAccount().catch(() => undefined);
+  }, []);
 
   const { isInternetReachable } = useNetInfo();
   const isOffline = !isInternetReachable;
@@ -162,8 +171,10 @@ export const UserSheet = () => {
           <Card
             customMessage={{
               visible: true,
-              message: strings.notLoggedIn(),
-              actionText: strings.loginMessageActionText(),
+              message: ohaiEmail || strings.notLoggedIn(),
+              actionText: ohaiEmail
+                ? "Manage ohai account"
+                : strings.loginMessageActionText(),
               icon: "account-outline",
               id: "log-in",
               type: "normal",

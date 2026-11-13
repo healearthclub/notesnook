@@ -25,6 +25,7 @@ import { db } from "../../common/database";
 import { FloatingButton } from "../../components/container/floating-button";
 import DelayLayout from "../../components/delay-layout";
 import { Header } from "../../components/header";
+import { NotesListLayout } from "../../features/notes/list-layout";
 import List from "../../components/list";
 import { PlaceholderData } from "../../components/list/empty";
 import SelectionHeader from "../../components/selection-header";
@@ -185,60 +186,66 @@ const NotesPage = ({
 
   return (
     <>
-      <Header
-        renderedInRoute={route.name}
-        title={
-          route.name === "Monographs" ? strings.routes[route.name]() : title
-        }
-        canGoBack={params?.current?.canGoBack}
-        hasSearch={true}
-        id={route.name === "Monographs" ? "Monographs" : params?.current?.id}
-        onSearch={() => {
-          if (route.name !== "Monographs" && !item) return;
+      <NotesListLayout
+        header={
+          <Header
+            renderedInRoute={route.name}
+            title={
+              route.name === "Monographs" ? strings.routes[route.name]() : title
+            }
+            canGoBack={params?.current?.canGoBack}
+            hasSearch={true}
+            id={
+              route.name === "Monographs" ? "Monographs" : params?.current?.id
+            }
+            onSearch={() => {
+              if (route.name !== "Monographs" && !item) return;
 
-          const selector =
-            route.name === "Monographs"
-              ? db.monographs.all
-              : item && db.relations.from(item, "note").selector;
+              const selector =
+                route.name === "Monographs"
+                  ? db.monographs.all
+                  : item && db.relations.from(item, "note").selector;
 
-          if (!selector) return;
+              if (!selector) return;
 
-          Navigation.push("Search", {
-            placeholder: strings.searchInRoute(title || route.name),
-            type: "note",
-            title: title!,
-            route: route.name,
-            items: selector
-          });
-        }}
-        onPressDefaultRightButton={onPressFloatingButton}
-      />
-
-      <DelayLayout color={accentColor} wait={loadingNotes}>
-        <List
-          data={notes}
-          dataType="note"
-          groupType="notes"
-          onRefresh={onRequestUpdate}
-          loading={false}
-          renderedInRoute={route.name}
-          id={params.current?.id}
-          type={params.current?.item?.type}
-          headerTitle={title || strings.monographs()}
-          customAccentColor={accentColor}
-          placeholder={placeholder}
-        />
-
-        {!isMonograph &&
-        ((notes?.placeholders && (notes?.placeholders?.length || 0) > 0) ||
-          isFocused) ? (
-          <FloatingButton
-            color={accentColor}
-            onPress={onPressFloatingButton}
-            alwaysVisible
+              Navigation.push("Search", {
+                placeholder: strings.searchInRoute(title || route.name),
+                type: "note",
+                title: title!,
+                route: route.name,
+                items: selector
+              });
+            }}
+            onPressDefaultRightButton={onPressFloatingButton}
           />
-        ) : null}
-      </DelayLayout>
+        }
+      >
+        <DelayLayout color={accentColor} wait={loadingNotes}>
+          <List
+            data={notes}
+            dataType="note"
+            groupType="notes"
+            onRefresh={onRequestUpdate}
+            loading={false}
+            renderedInRoute={route.name}
+            id={params.current?.id}
+            type={params.current?.item?.type}
+            headerTitle={title || strings.monographs()}
+            customAccentColor={accentColor}
+            placeholder={placeholder}
+          />
+
+          {!isMonograph &&
+          ((notes?.placeholders && (notes?.placeholders?.length || 0) > 0) ||
+            isFocused) ? (
+            <FloatingButton
+              color={accentColor}
+              onPress={onPressFloatingButton}
+              alwaysVisible
+            />
+          ) : null}
+        </DelayLayout>
+      </NotesListLayout>
       <SelectionHeader
         id={route.params?.id || route.name}
         items={notes}

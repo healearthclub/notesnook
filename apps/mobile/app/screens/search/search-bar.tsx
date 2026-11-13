@@ -20,8 +20,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { strings } from "@notesnook/intl";
 import { useThemeColors } from "@notesnook/theme";
 import React, { useRef, useState } from "react";
-import { View } from "react-native";
+import { Keyboard, StyleSheet, View } from "react-native";
 import { TextInput } from "react-native-gesture-handler";
+import AppIcon from "../../components/ui/AppIcon";
 import { IconButton } from "../../components/ui/icon-button";
 import Navigation from "../../services/navigation";
 import useNavigationStore from "../../stores/use-navigation-store";
@@ -30,10 +31,10 @@ import { AppFontSize } from "../../utils/size";
 import { DefaultAppStyles } from "../../utils/styles";
 export const SearchBar = ({
   onChangeText,
-  loading
+  rounded = false
 }: {
   onChangeText: (value: string) => void;
-  loading?: boolean;
+  rounded?: boolean;
 }) => {
   const [clearButton, setClearButton] = useState(false);
   const selectionMode = useSelectionStore((state) => state.selectionMode);
@@ -51,38 +52,47 @@ export const SearchBar = ({
     <View
       style={{
         width: "100%",
-        paddingHorizontal: DefaultAppStyles.GAP
+        paddingHorizontal: DefaultAppStyles.GAP,
+        ...(rounded ? styles.roundedRow : undefined)
       }}
     >
       <View
         style={{
           flexDirection: "row",
           alignItems: "center",
-          width: "100%",
+          width: rounded ? undefined : "100%",
+          flex: rounded ? 1 : undefined,
           paddingHorizontal: DefaultAppStyles.GAP_SMALL,
-          borderRadius: 10,
+          borderRadius: rounded ? 28 : 10,
+          minHeight: rounded ? 48 : undefined,
+          backgroundColor: rounded ? colors.primary.background : undefined,
           borderColor: colors.primary.border,
           borderWidth: 1,
           paddingVertical: 3
         }}
       >
-        <IconButton
-          name="arrow-left"
-          size={AppFontSize.xxl}
-          top={10}
-          bottom={10}
-          onPress={() => {
-            Navigation.goBack();
-          }}
-          color={colors.primary.paragraph}
-          type="plain"
-        />
+        {rounded ? (
+          <AppIcon name="magnify" size={23} color={colors.primary.heading} />
+        ) : (
+          <IconButton
+            name="arrow-left"
+            size={AppFontSize.xxl}
+            top={10}
+            bottom={10}
+            onPress={() => {
+              Navigation.goBack();
+            }}
+            color={colors.primary.paragraph}
+            type="plain"
+          />
+        )}
 
         <TextInput
           ref={inputRef}
           testID="search-input"
           style={{
-            fontSize: AppFontSize.sm,
+            fontSize: rounded ? AppFontSize.md : AppFontSize.sm,
+            marginLeft: rounded ? 8 : undefined,
             fontFamily: "Inter-Regular",
             flex: 1,
             color: colors.primary.paragraph,
@@ -91,7 +101,8 @@ export const SearchBar = ({
           }}
           autoFocus
           onChangeText={_onChangeText}
-          placeholder={strings.typeAKeyword()}
+          accessibilityLabel={rounded ? strings.search() : undefined}
+          placeholder={rounded ? strings.search() : strings.typeAKeyword()}
           textContentType="none"
           returnKeyLabel={strings.search()}
           returnKeyType="search"
@@ -106,6 +117,7 @@ export const SearchBar = ({
             size={AppFontSize.xxl}
             top={10}
             testID="clear-search"
+            accessibilityLabel={strings.clear()}
             bottom={10}
             onPress={() => {
               inputRef.current?.clear();
@@ -117,6 +129,34 @@ export const SearchBar = ({
           />
         ) : null}
       </View>
+      {rounded ? (
+        <IconButton
+          name="close"
+          accessibilityRole="button"
+          accessibilityLabel={strings.close()}
+          testID="close-notes-search"
+          color={colors.primary.heading}
+          onPress={() => {
+            Keyboard.dismiss();
+            Navigation.goBack();
+          }}
+          style={{
+            ...styles.close,
+            borderColor: colors.primary.border,
+            backgroundColor: colors.primary.background
+          }}
+        />
+      ) : null}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  roundedRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 8
+  },
+  close: { width: 48, height: 48, borderRadius: 24, borderWidth: 1 }
+});

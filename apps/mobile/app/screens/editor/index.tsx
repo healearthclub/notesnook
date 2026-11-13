@@ -72,6 +72,41 @@ const style: ViewStyle = {
   alignSelf: "center",
   backgroundColor: "transparent"
 };
+
+const swipeToDismissKeyboard = `
+  (() => {
+    let swipe;
+    document.addEventListener("touchstart", (event) => {
+      swipe = undefined;
+      const scroller = event.target.closest?.("#editor-container-scroller");
+      const focused = document.activeElement;
+      if (
+        event.touches.length !== 1 ||
+        !scroller ||
+        scroller.scrollTop > 1 ||
+        !focused?.matches("#editor-title, .ProseMirror[contenteditable='true']") ||
+        !window.getSelection()?.isCollapsed
+      ) return;
+      const touch = event.touches[0];
+      swipe = { x: touch.clientX, y: touch.clientY, focused };
+    }, { passive: true });
+    document.addEventListener("touchend", (event) => {
+      const start = swipe;
+      swipe = undefined;
+      if (!start || document.activeElement !== start.focused) return;
+      const touch = event.changedTouches[0];
+      const vertical = touch.clientY - start.y;
+      const horizontal = Math.abs(touch.clientX - start.x);
+      if (vertical >= 44 && vertical > horizontal * 1.5) {
+        start.focused.blur();
+      }
+    }, { passive: true });
+    document.addEventListener("touchcancel", () => {
+      swipe = undefined;
+    }, { passive: true });
+  })();
+`;
+
 const onShouldStartLoadWithRequest = (request: ShouldStartLoadRequest) => {
   if (request.url.includes("nn://")) {
     openInternalLink(request.url);
@@ -162,6 +197,10 @@ const Editor = React.memo(
                 [i18n.locale]: i18n.messages
               })};
               globalThis.loadApp();
+              ${
+                Platform.OS === "ios" && !readonly ? swipeToDismissKeyboard : ""
+              }
+              true;
           `}
             useSharedProcessPool={false}
             javaScriptEnabled={true}
@@ -180,7 +219,7 @@ const Editor = React.memo(
             setDisplayZoomControls={false}
             allowFileAccess={true}
             scalesPageToFit={true}
-            hideKeyboardAccessoryView={false}
+            hideKeyboardAccessoryView={Platform.OS === "ios" && !readonly}
             allowsFullscreenVideo={true}
             allowFileAccessFromFileURLs={true}
             allowsInlineMediaPlayback

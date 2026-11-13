@@ -19,9 +19,11 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { strings } from "@notesnook/intl";
 import React from "react";
+import { Platform } from "react-native";
 import { FloatingButton } from "../../components/container/floating-button";
 import DelayLayout from "../../components/delay-layout";
 import { Header } from "../../components/header";
+import { NotesListLayout } from "../../features/notes/list-layout";
 import List from "../../components/list";
 import SelectionHeader from "../../components/selection-header";
 import { useNavigationFocus } from "../../hooks/use-navigation-focus";
@@ -34,6 +36,7 @@ import { db } from "../../common/database";
 
 export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
   const [notes, loading] = useNotes();
+  const isIOS = Platform.OS === "ios";
 
   const isFocused = useNavigationFocus(navigation, {
     onFocus: (prev) => {
@@ -48,46 +51,60 @@ export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
     delay: SettingsService.get().homepage === route.name ? 1 : -1
   });
 
+  const searchBar = (
+    <Header
+      renderedInRoute={route.name}
+      title={strings.routes[route.name]()}
+      canGoBack={false}
+      hasSearch={true}
+      onSearch={() => {
+        Navigation.push("Search", {
+          placeholder: strings.searchInRoute(route.name),
+          type: "note",
+          title: route.name,
+          route: route.name,
+          items: db.notes.all
+        });
+      }}
+      id={route.name}
+      trailingAction={
+        isIOS && !loading && isFocused ? (
+          <FloatingButton
+            inline
+            accessibilityLabel={strings.createNewNote()}
+            onPress={openEditor}
+            alwaysVisible
+          />
+        ) : undefined
+      }
+    />
+  );
+
   return (
     <>
-      <Header
-        renderedInRoute={route.name}
-        title={strings.routes[route.name]()}
-        canGoBack={false}
-        hasSearch={true}
-        onSearch={() => {
-          Navigation.push("Search", {
-            placeholder: strings.searchInRoute(route.name),
-            type: "note",
-            title: route.name,
-            route: route.name,
-            items: db.notes.all
-          });
-        }}
-        id={route.name}
-        onPressDefaultRightButton={openEditor}
-      />
-
-      <DelayLayout wait={loading}>
-        <List
-          data={notes}
-          dataType="note"
-          groupType="home"
-          renderedInRoute={route.name}
-          loading={loading || !isFocused}
-          headerTitle={strings.routes[route.name]()}
-          placeholder={{
-            title: route.name?.toLowerCase(),
-            paragraph: strings.notesEmpty(),
-            button: strings.createNewNote(),
-            action: openEditor,
-            loading: strings.loadingNotes()
-          }}
-        />
-        {!notes || !notes.placeholders?.length ? null : (
-          <FloatingButton onPress={openEditor} alwaysVisible />
-        )}
-      </DelayLayout>
+      <NotesListLayout header={searchBar}>
+        <DelayLayout wait={loading}>
+          <List
+            data={notes}
+            dataType="note"
+            groupType="home"
+            renderedInRoute={route.name}
+            loading={loading || !isFocused}
+            headerTitle={strings.routes[route.name]()}
+            placeholder={{
+              title: route.name?.toLowerCase(),
+              paragraph: strings.notesEmpty(),
+              button: isIOS ? undefined : strings.createNewNote(),
+              hideTip: isIOS,
+              action: openEditor,
+              loading: strings.loadingNotes()
+            }}
+          />
+          {!isIOS && notes?.placeholders?.length ? (
+            <FloatingButton onPress={openEditor} alwaysVisible />
+          ) : null}
+        </DelayLayout>
+      </NotesListLayout>
       <SelectionHeader id={route.name} items={notes} type="note" />
     </>
   );
