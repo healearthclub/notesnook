@@ -16,6 +16,11 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+import { Platform } from "react-native";
+
+// iOS selects the SF Pro optical size from the rendered point size.
+export const appBodyFont = Platform.OS === "ios" ? "System" : "Inter-Regular";
+
 export const DefaultAppStyles = {
   GAP: 16,
   GAP_SMALL: 8,

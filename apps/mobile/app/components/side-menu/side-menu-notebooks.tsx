@@ -28,7 +28,7 @@ import { TreeItem } from "../../stores/create-notebook-tree-stores";
 import useNavigationStore from "../../stores/use-navigation-store";
 import { useNotebooks } from "../../stores/use-notebook-store";
 import { AppFontSize } from "../../utils/size";
-import { DefaultAppStyles } from "../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../utils/styles";
 import { Properties } from "../properties";
 import { NotebookItem } from "./notebook-item";
 import { SideMenuHeader } from "./side-menu-header";
@@ -172,7 +172,7 @@ export const SideMenuNotebooks = () => {
             <TextInput
               placeholder={strings.filterNotebooks()}
               style={{
-                fontFamily: "Inter-Regular",
+                fontFamily: appBodyFont,
                 fontSize: AppFontSize.xs,
                 paddingTop: 0,
                 paddingBottom: 0

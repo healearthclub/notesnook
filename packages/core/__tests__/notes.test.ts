@@ -76,6 +76,24 @@ test("add note", () =>
     expect(await db.notes.exists(id)).toBe(true);
   }));
 
+test("an editor can save and clear a title without generating one", async () => {
+  const db = await databaseTest();
+  const options = { generateTitle: false };
+  const content = TEST_NOTE.content;
+  const id = await db.notes.add({ content }, options);
+  expect(await db.notes.note(id)).toMatchObject({
+    title: "",
+    isGeneratedTitle: false
+  });
+
+  await db.notes.add({ id, title: "My title" }, options);
+  await db.notes.add({ id, content }, options);
+  expect((await db.notes.note(id))?.title).toBe("My title");
+
+  await db.notes.add({ id, title: "" }, options);
+  expect((await db.notes.note(id))?.title).toBe("");
+});
+
 test("get note content", () =>
   noteTest().then(async ({ db, id }) => {
     const note = await db.notes.note(id);

@@ -42,7 +42,7 @@ import { IconButton } from "../icon-button";
 import Paragraph from "../typography/paragraph";
 import phone from "phone";
 import isURL from "validator/lib/isURL";
-import { DefaultAppStyles } from "../../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../../utils/styles";
 
 interface InputProps extends TextInputProps {
   fwdRef?: RefObject<TextInput | null>;
@@ -239,7 +239,7 @@ const Input = ({
     flexShrink: 1,
     paddingBottom: DefaultAppStyles.GAP_VERTICAL,
     paddingTop: DefaultAppStyles.GAP_VERTICAL,
-    fontFamily: "Inter-Regular",
+    fontFamily: appBodyFont,
     ...(inputStyle as ViewStyle)
   };
 

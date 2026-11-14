@@ -28,7 +28,7 @@ import Navigation from "../../services/navigation";
 import useNavigationStore from "../../stores/use-navigation-store";
 import { useSelectionStore } from "../../stores/use-selection-store";
 import { AppFontSize } from "../../utils/size";
-import { DefaultAppStyles } from "../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../utils/styles";
 export const SearchBar = ({
   onChangeText,
   rounded = false
@@ -93,7 +93,7 @@ export const SearchBar = ({
           style={{
             fontSize: rounded ? AppFontSize.md : AppFontSize.sm,
             marginLeft: rounded ? 8 : undefined,
-            fontFamily: "Inter-Regular",
+            fontFamily: appBodyFont,
             flex: 1,
             color: colors.primary.paragraph,
             paddingTop: 0,

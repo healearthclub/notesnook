@@ -41,7 +41,7 @@ export function BottomTabBar<Id extends string>({
   onSelectTab,
   bottomInset
 }: BottomTabBarProps<Id>) {
-  const { colors } = useThemeColors();
+  const { colors, isDark } = useThemeColors();
 
   return (
     <View
@@ -72,7 +72,9 @@ export function BottomTabBar<Id extends string>({
               {
                 backgroundColor: colors.secondary.background,
                 borderColor: selected ? colors.primary.accent : "transparent"
-              }
+              },
+              isDark && styles.darkGlow,
+              isDark && selected && styles.selectedDarkGlow
             ]}
           >
             <AppIcon
@@ -94,6 +96,15 @@ const styles = StyleSheet.create({
     gap: 10,
     paddingHorizontal: 16,
     paddingTop: 8
+  },
+  darkGlow: {
+    shadowColor: "#42FF83",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.18,
+    shadowRadius: 5
+  },
+  selectedDarkGlow: {
+    shadowOpacity: 0.32
   },
   tab: {
     minWidth: 72,

@@ -1,0 +1,125 @@
+diff --git a/node_modules/react-native-webview/apple/RNCWebViewImpl.h b/node_modules/react-native-webview/apple/RNCWebViewImpl.h
+--- a/node_modules/react-native-webview/apple/RNCWebViewImpl.h
++++ b/node_modules/react-native-webview/apple/RNCWebViewImpl.h
+@@ -96,6 +96,7 @@
+ @property (nonatomic, copy) NSString * _Nullable applicationNameForUserAgent;
+ @property (nonatomic, assign) BOOL cacheEnabled;
+ @property (nonatomic, assign) BOOL javaScriptEnabled;
++@property (nonatomic, assign) BOOL disableJavaScriptDialogs;
+ @property (nonatomic, assign) BOOL javaScriptCanOpenWindowsAutomatically;
+ @property (nonatomic, assign) BOOL allowFileAccessFromFileURLs;
+ @property (nonatomic, assign) BOOL allowUniversalAccessFromFileURLs;
+diff --git a/node_modules/react-native-webview/apple/RNCWebViewImpl.m b/node_modules/react-native-webview/apple/RNCWebViewImpl.m
+--- a/node_modules/react-native-webview/apple/RNCWebViewImpl.m
++++ b/node_modules/react-native-webview/apple/RNCWebViewImpl.m
+@@ -1201,6 +1201,10 @@
+  */
+ - (void)webView:(WKWebView *)webView runJavaScriptAlertPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(void))completionHandler
+ {
++  if (_disableJavaScriptDialogs) {
++    completionHandler();
++    return;
++  }
+ #if !TARGET_OS_OSX
+   UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"" message:message preferredStyle:UIAlertControllerStyleAlert];
+   [alert addAction:[UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+@@ -1220,6 +1224,10 @@
+  * confirm
+  */
+ - (void)webView:(WKWebView *)webView runJavaScriptConfirmPanelWithMessage:(NSString *)message initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(BOOL))completionHandler{
++  if (_disableJavaScriptDialogs) {
++    completionHandler(NO);
++    return;
++  }
+ #if !TARGET_OS_OSX
+   UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"" message:message preferredStyle:UIAlertControllerStyleAlert];
+   [alert addAction:[UIAlertAction actionWithTitle:@"Ok" style:UIAlertActionStyleDefault handler:^(__unused UIAlertAction *action) {
+@@ -1245,6 +1253,10 @@
+  * prompt
+  */
+ - (void)webView:(WKWebView *)webView runJavaScriptTextInputPanelWithPrompt:(NSString *)prompt defaultText:(NSString *)defaultText initiatedByFrame:(WKFrameInfo *)frame completionHandler:(void (^)(NSString *))completionHandler{
++  if (_disableJavaScriptDialogs) {
++    completionHandler(nil);
++    return;
++  }
+ #if !TARGET_OS_OSX
+   UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"" message:prompt preferredStyle:UIAlertControllerStyleAlert];
+   [alert addTextFieldWithConfigurationHandler:^(UITextField *textField) {
+diff --git a/node_modules/react-native-webview/apple/RNCWebView.mm b/node_modules/react-native-webview/apple/RNCWebView.mm
+--- a/node_modules/react-native-webview/apple/RNCWebView.mm
++++ b/node_modules/react-native-webview/apple/RNCWebView.mm
+@@ -276,6 +276,7 @@
+     REMAP_WEBVIEW_PROP(injectedJavaScriptBeforeContentLoadedForMainFrameOnly)
+     REMAP_WEBVIEW_STRING_PROP(injectedJavaScriptObject)
+     REMAP_WEBVIEW_PROP(javaScriptEnabled)
++    REMAP_WEBVIEW_PROP(disableJavaScriptDialogs)
+     REMAP_WEBVIEW_PROP(javaScriptCanOpenWindowsAutomatically)
+     REMAP_WEBVIEW_PROP(allowFileAccessFromFileURLs)
+     REMAP_WEBVIEW_PROP(allowUniversalAccessFromFileURLs)
+diff --git a/node_modules/react-native-webview/apple/RNCWebViewManager.mm b/node_modules/react-native-webview/apple/RNCWebViewManager.mm
+--- a/node_modules/react-native-webview/apple/RNCWebViewManager.mm
++++ b/node_modules/react-native-webview/apple/RNCWebViewManager.mm
+@@ -58,6 +58,7 @@
+ RCT_EXPORT_VIEW_PROPERTY(injectedJavaScriptBeforeContentLoadedForMainFrameOnly, BOOL)
+ RCT_EXPORT_VIEW_PROPERTY(injectedJavaScriptObject, NSString)
+ RCT_EXPORT_VIEW_PROPERTY(javaScriptEnabled, BOOL)
++RCT_EXPORT_VIEW_PROPERTY(disableJavaScriptDialogs, BOOL)
+ RCT_EXPORT_VIEW_PROPERTY(javaScriptCanOpenWindowsAutomatically, BOOL)
+ RCT_EXPORT_VIEW_PROPERTY(allowFileAccessFromFileURLs, BOOL)
+ RCT_EXPORT_VIEW_PROPERTY(allowUniversalAccessFromFileURLs, BOOL)
+diff --git a/node_modules/react-native-webview/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java b/node_modules/react-native-webview/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java
+--- a/node_modules/react-native-webview/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java
++++ b/node_modules/react-native-webview/android/src/newarch/com/reactnativecommunity/webview/RNCWebViewManager.java
+@@ -428,6 +428,8 @@
+ 
+     @Override
+     public void setFraudulentWebsiteWarningEnabled(RNCWebViewWrapper view, boolean value) {}
++    @Override
++    public void setDisableJavaScriptDialogs(RNCWebViewWrapper view, boolean value) {}
+     /* !iOS PROPS - no implemented here */
+ 
+     @Override
+diff --git a/node_modules/react-native-webview/src/RNCWebViewNativeComponent.ts b/node_modules/react-native-webview/src/RNCWebViewNativeComponent.ts
+--- a/node_modules/react-native-webview/src/RNCWebViewNativeComponent.ts
++++ b/node_modules/react-native-webview/src/RNCWebViewNativeComponent.ts
+@@ -246,6 +246,7 @@
+   // Workaround to watch if listener if defined
+   hasOnFileDownload?: boolean;
+   fraudulentWebsiteWarningEnabled?: WithDefault<boolean, true>;
++  disableJavaScriptDialogs?: WithDefault<boolean, false>;
+   // !iOS only
+ 
+   allowFileAccessFromFileURLs?: boolean;
+diff --git a/node_modules/react-native-webview/src/WebViewTypes.ts b/node_modules/react-native-webview/src/WebViewTypes.ts
+--- a/node_modules/react-native-webview/src/WebViewTypes.ts
++++ b/node_modules/react-native-webview/src/WebViewTypes.ts
+@@ -777,6 +777,9 @@
+    * @platform ios
+    */
+   fraudulentWebsiteWarningEnabled?: boolean;
++
++  /** Suppress page-owned alert, confirm, and prompt dialogs. Defaults to false. */
++  disableJavaScriptDialogs?: boolean;
+ }
+ 
+ export interface MacOSWebViewProps extends WebViewSharedProps {
+diff --git a/node_modules/react-native-webview/lib/WebViewTypes.d.ts b/node_modules/react-native-webview/lib/WebViewTypes.d.ts
+--- a/node_modules/react-native-webview/lib/WebViewTypes.d.ts
++++ b/node_modules/react-native-webview/lib/WebViewTypes.d.ts
+@@ -614,6 +614,8 @@
+      * @platform ios
+      */
+     fraudulentWebsiteWarningEnabled?: boolean;
++    /** Suppress page-owned alert, confirm, and prompt dialogs. Defaults to false. */
++    disableJavaScriptDialogs?: boolean;
+ }
+ export interface MacOSWebViewProps extends WebViewSharedProps {
+     /**
+diff --git a/node_modules/react-native-webview/lib/RNCWebViewNativeComponent.js b/node_modules/react-native-webview/lib/RNCWebViewNativeComponent.js
+--- a/node_modules/react-native-webview/lib/RNCWebViewNativeComponent.js
++++ b/node_modules/react-native-webview/lib/RNCWebViewNativeComponent.js
+@@ -1 +1 @@
+-var _interopRequireDefault=require("@babel/runtime/helpers/interopRequireDefault");Object.defineProperty(exports,"__esModule",{value:true});exports.default=exports.__INTERNAL_VIEW_CONFIG=exports.Commands=void 0;var _codegenNativeComponent=_interopRequireDefault(require("react-native/Libraries/Utilities/codegenNativeComponent"));var _codegenNativeCommands=_interopRequireDefault(require("react-native/Libraries/Utilities/codegenNativeCommands"));var NativeComponentRegistry=require('react-native/Libraries/NativeComponent/NativeComponentRegistry');var _require=require('react-native/Libraries/NativeComponent/ViewConfigIgnore'),ConditionallyIgnoredEventHandlers=_require.ConditionallyIgnoredEventHandlers;var _require2=require("react-native/Libraries/ReactNative/RendererProxy"),dispatchCommand=_require2.dispatchCommand;var nativeComponentName='RNCWebView';var __INTERNAL_VIEW_CONFIG=exports.__INTERNAL_VIEW_CONFIG={uiViewClassName:'RNCWebView',directEventTypes:{topContentSizeChange:{registrationName:'onContentSizeChange'},topRenderProcessGone:{registrationName:'onRenderProcessGone'},topContentProcessDidTerminate:{registrationName:'onContentProcessDidTerminate'},topCustomMenuSelection:{registrationName:'onCustomMenuSelection'},topFileDownload:{registrationName:'onFileDownload'},topLoadingError:{registrationName:'onLoadingError'},topLoadingSubResourceError:{registrationName:'onLoadingSubResourceError'},topLoadingFinish:{registrationName:'onLoadingFinish'},topLoadingProgress:{registrationName:'onLoadingProgress'},topLoadingStart:{registrationName:'onLoadingStart'},topHttpError:{registrationName:'onHttpError'},topMessage:{registrationName:'onMessage'},topOpenWindow:{registrationName:'onOpenWindow'},topScroll:{registrationName:'onScroll'},topShouldStartLoadWithRequest:{registrationName:'onShouldStartLoadWithRequest'}},validAttributes:Object.assign({allowFileAccess:true,allowsProtectedMedia:true,allowsFullscreenVideo:true,androidLayerType:true,cacheMode:true,domStorageEnabled:true,downloadingMessage:true,forceDarkOn:true,geolocationEnabled:true,lackPermissionToDownloadMessage:true,messagingModuleName:true,minimumFontSize:true,mixedContentMode:true,nestedScrollEnabled:true,overScrollMode:true,saveFormDataDisabled:true,scalesPageToFit:true,setBuiltInZoomControls:true,setDisplayZoomControls:true,setSupportMultipleWindows:true,textZoom:true,thirdPartyCookiesEnabled:true,hasOnScroll:true,allowingReadAccessToURL:true,allowsBackForwardNavigationGestures:true,allowsInlineMediaPlayback:true,allowsPictureInPictureMediaPlayback:true,allowsAirPlayForMediaPlayback:true,allowsLinkPreview:true,automaticallyAdjustContentInsets:true,autoManageStatusBarEnabled:true,bounces:true,contentInset:true,contentInsetAdjustmentBehavior:true,contentMode:true,dataDetectorTypes:true,decelerationRate:true,directionalLockEnabled:true,enableApplePay:true,hideKeyboardAccessoryView:true,keyboardDisplayRequiresUserAction:true,limitsNavigationsToAppBoundDomains:true,mediaCapturePermissionGrantType:true,pagingEnabled:true,pullToRefreshEnabled:true,refreshControlLightMode:true,scrollEnabled:true,sharedCookiesEnabled:true,textInteractionEnabled:true,useSharedProcessPool:true,menuItems:true,suppressMenuItems:true,hasOnFileDownload:true,fraudulentWebsiteWarningEnabled:true,allowFileAccessFromFileURLs:true,allowUniversalAccessFromFileURLs:true,applicationNameForUserAgent:true,basicAuthCredential:true,cacheEnabled:true,incognito:true,injectedJavaScript:true,injectedJavaScriptBeforeContentLoaded:true,injectedJavaScriptForMainFrameOnly:true,injectedJavaScriptBeforeContentLoadedForMainFrameOnly:true,javaScriptCanOpenWindowsAutomatically:true,javaScriptEnabled:true,webviewDebuggingEnabled:true,mediaPlaybackRequiresUserAction:true,messagingEnabled:true,hasOnOpenWindowEvent:true,showsHorizontalScrollIndicator:true,showsVerticalScrollIndicator:true,indicatorStyle:true,newSource:true,userAgent:true,injectedJavaScriptObject:true,paymentRequestEnabled:true},ConditionallyIgnoredEventHandlers({onContentSizeChange:true,onRenderProcessGone:true,onContentProcessDidTerminate:true,onCustomMenuSelection:true,onFileDownload:true,onLoadingError:true,onLoadingSubResourceError:true,onLoadingFinish:true,onLoadingProgress:true,onLoadingStart:true,onHttpError:true,onMessage:true,onOpenWindow:true,onScroll:true,onShouldStartLoadWithRequest:true}))};var _default=exports.default=NativeComponentRegistry.get(nativeComponentName,function(){return __INTERNAL_VIEW_CONFIG;});var Commands=exports.Commands={goBack:function goBack(ref){dispatchCommand(ref,"goBack",[]);},goForward:function goForward(ref){dispatchCommand(ref,"goForward",[]);},reload:function reload(ref){dispatchCommand(ref,"reload",[]);},stopLoading:function stopLoading(ref){dispatchCommand(ref,"stopLoading",[]);},injectJavaScript:function injectJavaScript(ref,javascript){dispatchCommand(ref,"injectJavaScript",[javascript]);},requestFocus:function requestFocus(ref){dispatchCommand(ref,"requestFocus",[]);},postMessage:function postMessage(ref,data){dispatchCommand(ref,"postMessage",[data]);},loadUrl:function loadUrl(ref,url){dispatchCommand(ref,"loadUrl",[url]);},clearFormData:function clearFormData(ref){dispatchCommand(ref,"clearFormData",[]);},clearCache:function clearCache(ref,includeDiskFiles){dispatchCommand(ref,"clearCache",[includeDiskFiles]);},clearHistory:function clearHistory(ref){dispatchCommand(ref,"clearHistory",[]);}};
+\ No newline at end of file
++var _interopRequireDefault=require("@babel/runtime/helpers/interopRequireDefault");Object.defineProperty(exports,"__esModule",{value:true});exports.default=exports.__INTERNAL_VIEW_CONFIG=exports.Commands=void 0;var _codegenNativeComponent=_interopRequireDefault(require("react-native/Libraries/Utilities/codegenNativeComponent"));var _codegenNativeCommands=_interopRequireDefault(require("react-native/Libraries/Utilities/codegenNativeCommands"));var NativeComponentRegistry=require('react-native/Libraries/NativeComponent/NativeComponentRegistry');var _require=require('react-native/Libraries/NativeComponent/ViewConfigIgnore'),ConditionallyIgnoredEventHandlers=_require.ConditionallyIgnoredEventHandlers;var _require2=require("react-native/Libraries/ReactNative/RendererProxy"),dispatchCommand=_require2.dispatchCommand;var nativeComponentName='RNCWebView';var __INTERNAL_VIEW_CONFIG=exports.__INTERNAL_VIEW_CONFIG={uiViewClassName:'RNCWebView',directEventTypes:{topContentSizeChange:{registrationName:'onContentSizeChange'},topRenderProcessGone:{registrationName:'onRenderProcessGone'},topContentProcessDidTerminate:{registrationName:'onContentProcessDidTerminate'},topCustomMenuSelection:{registrationName:'onCustomMenuSelection'},topFileDownload:{registrationName:'onFileDownload'},topLoadingError:{registrationName:'onLoadingError'},topLoadingSubResourceError:{registrationName:'onLoadingSubResourceError'},topLoadingFinish:{registrationName:'onLoadingFinish'},topLoadingProgress:{registrationName:'onLoadingProgress'},topLoadingStart:{registrationName:'onLoadingStart'},topHttpError:{registrationName:'onHttpError'},topMessage:{registrationName:'onMessage'},topOpenWindow:{registrationName:'onOpenWindow'},topScroll:{registrationName:'onScroll'},topShouldStartLoadWithRequest:{registrationName:'onShouldStartLoadWithRequest'}},validAttributes:Object.assign({allowFileAccess:true,allowsProtectedMedia:true,allowsFullscreenVideo:true,androidLayerType:true,cacheMode:true,domStorageEnabled:true,downloadingMessage:true,forceDarkOn:true,geolocationEnabled:true,lackPermissionToDownloadMessage:true,messagingModuleName:true,minimumFontSize:true,mixedContentMode:true,nestedScrollEnabled:true,overScrollMode:true,saveFormDataDisabled:true,scalesPageToFit:true,setBuiltInZoomControls:true,setDisplayZoomControls:true,setSupportMultipleWindows:true,textZoom:true,thirdPartyCookiesEnabled:true,hasOnScroll:true,allowingReadAccessToURL:true,allowsBackForwardNavigationGestures:true,allowsInlineMediaPlayback:true,allowsPictureInPictureMediaPlayback:true,allowsAirPlayForMediaPlayback:true,allowsLinkPreview:true,automaticallyAdjustContentInsets:true,autoManageStatusBarEnabled:true,bounces:true,contentInset:true,contentInsetAdjustmentBehavior:true,contentMode:true,dataDetectorTypes:true,decelerationRate:true,directionalLockEnabled:true,enableApplePay:true,hideKeyboardAccessoryView:true,keyboardDisplayRequiresUserAction:true,limitsNavigationsToAppBoundDomains:true,mediaCapturePermissionGrantType:true,pagingEnabled:true,pullToRefreshEnabled:true,refreshControlLightMode:true,scrollEnabled:true,sharedCookiesEnabled:true,textInteractionEnabled:true,useSharedProcessPool:true,menuItems:true,suppressMenuItems:true,hasOnFileDownload:true,fraudulentWebsiteWarningEnabled:true,disableJavaScriptDialogs:true,allowFileAccessFromFileURLs:true,allowUniversalAccessFromFileURLs:true,applicationNameForUserAgent:true,basicAuthCredential:true,cacheEnabled:true,incognito:true,injectedJavaScript:true,injectedJavaScriptBeforeContentLoaded:true,injectedJavaScriptForMainFrameOnly:true,injectedJavaScriptBeforeContentLoadedForMainFrameOnly:true,javaScriptCanOpenWindowsAutomatically:true,javaScriptEnabled:true,webviewDebuggingEnabled:true,mediaPlaybackRequiresUserAction:true,messagingEnabled:true,hasOnOpenWindowEvent:true,showsHorizontalScrollIndicator:true,showsVerticalScrollIndicator:true,indicatorStyle:true,newSource:true,userAgent:true,injectedJavaScriptObject:true,paymentRequestEnabled:true},ConditionallyIgnoredEventHandlers({onContentSizeChange:true,onRenderProcessGone:true,onContentProcessDidTerminate:true,onCustomMenuSelection:true,onFileDownload:true,onLoadingError:true,onLoadingSubResourceError:true,onLoadingFinish:true,onLoadingProgress:true,onLoadingStart:true,onHttpError:true,onMessage:true,onOpenWindow:true,onScroll:true,onShouldStartLoadWithRequest:true}))};var _default=exports.default=NativeComponentRegistry.get(nativeComponentName,function(){return __INTERNAL_VIEW_CONFIG;});var Commands=exports.Commands={goBack:function goBack(ref){dispatchCommand(ref,"goBack",[]);},goForward:function goForward(ref){dispatchCommand(ref,"goForward",[]);},reload:function reload(ref){dispatchCommand(ref,"reload",[]);},stopLoading:function stopLoading(ref){dispatchCommand(ref,"stopLoading",[]);},injectJavaScript:function injectJavaScript(ref,javascript){dispatchCommand(ref,"injectJavaScript",[javascript]);},requestFocus:function requestFocus(ref){dispatchCommand(ref,"requestFocus",[]);},postMessage:function postMessage(ref,data){dispatchCommand(ref,"postMessage",[data]);},loadUrl:function loadUrl(ref,url){dispatchCommand(ref,"loadUrl",[url]);},clearFormData:function clearFormData(ref){dispatchCommand(ref,"clearFormData",[]);},clearCache:function clearCache(ref,includeDiskFiles){dispatchCommand(ref,"clearCache",[includeDiskFiles]);},clearHistory:function clearHistory(ref){dispatchCommand(ref,"clearHistory",[]);}};
+\ No newline at end of file

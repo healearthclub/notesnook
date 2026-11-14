@@ -81,7 +81,8 @@ export class Notes implements ICollection {
   }
 
   async add(
-    item: Partial<Note & { content: NoteContent<false>; sessionId: string }>
+    item: Partial<Note & { content: NoteContent<false>; sessionId: string }>,
+    { generateTitle = true }: { generateTitle?: boolean } = {}
   ): Promise<string> {
     if (item.remote)
       throw new Error("Please use db.notes.merge to merge remote notes.");
@@ -129,7 +130,10 @@ export class Notes implements ICollection {
         dateEdited = Date.now();
       }
 
-      if (!isUpdating || item.title === "") {
+      if (!generateTitle) {
+        if (!isUpdating) item.title ??= "";
+        if (item.title !== undefined) item.isGeneratedTitle = false;
+      } else if (!isUpdating || item.title === "") {
         item.isGeneratedTitle = !Boolean(item.title);
         item.title =
           item.title ||
@@ -149,7 +153,7 @@ export class Notes implements ICollection {
         .select(["isGeneratedTitle", "title"])
         .where("id", "=", id)
         .executeTakeFirst();
-      if (isUpdating) {
+      if (isUpdating && generateTitle) {
         const didUserEditTitle = Boolean(item.title);
         item.isGeneratedTitle =
           Boolean(currentNoteTitleFields?.isGeneratedTitle) &&

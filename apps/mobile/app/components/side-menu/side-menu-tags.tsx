@@ -28,7 +28,7 @@ import { TaggedNotes } from "../../screens/notes/tagged";
 import useNavigationStore from "../../stores/use-navigation-store";
 import { useTags } from "../../stores/use-tag-store";
 import { AppFontSize, defaultBorderRadius } from "../../utils/size";
-import { DefaultAppStyles } from "../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../utils/styles";
 import { Properties } from "../properties";
 import AppIcon from "../ui/AppIcon";
 import { Pressable } from "../ui/pressable";
@@ -300,7 +300,7 @@ export const SideMenuTags = () => {
             <TextInput
               placeholder={strings.filterTags()}
               style={{
-                fontFamily: "Inter-Regular",
+                fontFamily: appBodyFont,
                 fontSize: AppFontSize.xs,
                 paddingTop: 0,
                 paddingBottom: 0

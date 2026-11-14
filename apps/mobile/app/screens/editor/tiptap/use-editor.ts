@@ -38,7 +38,7 @@ import { strings } from "@notesnook/intl";
 import { useThemeEngineStore } from "@notesnook/theme";
 import { Mutex } from "async-mutex";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Linking } from "react-native";
+import { Linking, Platform } from "react-native";
 import WebView from "react-native-webview";
 import { DatabaseLogger, db } from "../../../common/database";
 import useGlobalSafeAreaInsets from "../../../hooks/use-global-safe-area-insets";
@@ -380,7 +380,10 @@ export const useEditor = (
 
         if (!locked) {
           DatabaseLogger.log(`Saving note: ${id}...`);
-          id = await db.notes?.add({ ...noteData });
+          id = await db.notes?.add(
+            { ...noteData },
+            { generateTitle: Platform.OS !== "ios" }
+          );
           saved = true;
           DatabaseLogger.log(`Note saved: ${id}...`);
 
@@ -446,10 +449,10 @@ export const useEditor = (
           }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if (typeof noteData.title === "string") {
-            await db.notes.add({
-              title: noteData.title,
-              id: noteData.id
-            });
+            await db.notes.add(
+              { title: noteData.title, id: noteData.id },
+              { generateTitle: Platform.OS !== "ios" }
+            );
           }
 
           noteData.contentId = note?.contentId;

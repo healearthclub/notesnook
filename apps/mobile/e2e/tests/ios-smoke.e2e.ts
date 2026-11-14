@@ -1,7 +1,9 @@
 import { by, device, element, expect, waitFor, web } from "detox";
+import { strict as assert } from "node:assert";
 import { once } from "node:events";
 import { createServer } from "node:http";
 import type { AddressInfo } from "node:net";
+import { blockedBrowserHost } from "../../app/features/browser/browser-guard";
 
 async function waitForWeb(check: () => Promise<unknown>) {
   const deadline = Date.now() + 15000;
@@ -39,6 +41,23 @@ async function tapUntilVisible(
   }
   throw lastError;
 }
+
+it("recognizes unsafe browser destinations without navigating to them", () => {
+  assert.equal(
+    blockedBrowserHost("https://PRIVBRSR.com./click"),
+    "privbrsr.com"
+  );
+  assert.equal(
+    blockedBrowserHost("https://youtube.com@sub.privbrsr.com/click"),
+    "sub.privbrsr.com"
+  );
+  assert.equal(blockedBrowserHost("https://youtbue.com"), "youtbue.com");
+  assert.equal(
+    blockedBrowserHost("https://m.youtube.com/watch?v=test"),
+    undefined
+  );
+  assert.equal(blockedBrowserHost("https://x.com/?q=privbrsr.com"), undefined);
+});
 
 describe("iOS local notes", () => {
   it("keeps a saved note and a web page open across tab switches", async () => {
@@ -131,12 +150,34 @@ describe("iOS local notes", () => {
     );
     await device.takeScreenshot("ios-fork-persisted-note");
 
-    const server = createServer((_request, response) => {
+    let browserUserAgent: string | undefined;
+    const server = createServer((request, response) => {
+      browserUserAgent = request.headers["user-agent"];
       response.writeHead(200, {
         "Content-Type": "text/html",
         Connection: "close"
       });
-      response.end('<!doctype html><h1 id="title">Browser smoke test</h1>');
+      if (request.url === "/dialogs") {
+        response.end(`<!doctype html>
+          <h1 id="title">Waiting for page dialogs</h1>
+          <script>
+            const firstAlert = alert("Fixture alert");
+            const confirmed = confirm("Fixture confirm");
+            const answer = prompt("Fixture prompt");
+            document.getElementById("title").textContent =
+              firstAlert === undefined && confirmed === false && answer === null
+                ? "Page dialogs were dismissed"
+                : "Unexpected dialog results";
+            setInterval(() => alert("Repeated fixture alert"), 300);
+          </script>`);
+        return;
+      }
+      const secondPage = request.url === "/second";
+      response.end(`<!doctype html>
+        <title>${secondPage ? "Second test page" : "First test page"}</title>
+        <h1 id="title">${secondPage ? "Second browser tab" : "Browser smoke test"}</h1>
+        <input id="draft" aria-label="Draft">
+        <a id="popup" href="/second" target="_blank">Open in new tab</a>`);
     });
     try {
       server.listen(0, "127.0.0.1");
@@ -145,17 +186,113 @@ describe("iOS local notes", () => {
       const notesTab = element(by.id("main-tab-notes"));
       const browserTab = element(by.id("main-tab-browser"));
       const address = element(by.id("browser-address"));
-      await tapUntilVisible(browserTab, address);
+      const home = element(by.id("browser-home"));
+      const resume = element(by.id("browser-resume-tab"));
+      const homeResume = element(by.id("browser-home-resume-tab"));
+      const addTab = element(by.id("browser-add-tab"));
+      const pageAddTab = element(by.id("browser-page-add-tab"));
+      const minimize = element(by.id("browser-minimize-tab"));
+      await tapUntilVisible(browserTab, home);
+      await device.takeScreenshot("ios-browser-empty");
+      await tapUntilVisible(addTab, address);
       await address.tap();
       await address.typeText(`http://localhost:${port}/`);
       await address.tapReturnKey();
 
       const heading = web(by.id("browser-webview")).element(by.web.id("title"));
       await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
+      if (!/Mobile\/\S+ Safari\/604\.1/.test(browserUserAgent ?? "")) {
+        throw new Error(
+          "The browser did not send the Safari compatibility suffix"
+        );
+      }
       await tapUntilVisible(notesTab, element(by.id("editor.id")));
-      await tapUntilVisible(browserTab, address);
+      await tapUntilVisible(resume, address);
       await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
+      const draft = web(by.id("browser-webview")).element(by.web.id("draft"));
+      await draft.runScript((field: HTMLInputElement) => {
+        field.value = "Keep this draft";
+      });
+
+      const firstTab = element(by.id("browser-home-tab-1"));
+      const secondTab = element(by.id("browser-tab-2"));
+      const swipeArea = element(by.id("browser-page-swipe"));
+
+      await pageAddTab.tap();
+      await waitFor(secondTab).toBeVisible().withTimeout(10000);
+      await waitFor(address).toHaveText("").withTimeout(10000);
+      await new Promise((resolve) => setTimeout(resolve, 350));
+      await address.tap();
+      await address.typeText(`http://localhost:${port}/second`);
+      await address.tapReturnKey();
+      await waitForWeb(() => expect(heading).toHaveText("Second browser tab"));
+
+      await swipeArea.swipe("right", "fast", 0.55, 0.25, 0.45);
+      await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
+      await draft.runScript((field: HTMLInputElement) => {
+        if (field.value !== "Keep this draft") {
+          throw new Error("Switching tabs discarded the live page state");
+        }
+      });
+      await swipeArea.swipe("left", "fast", 0.55, 0.75, 0.45);
+      await waitForWeb(() => expect(heading).toHaveText("Second browser tab"));
+      await device.takeScreenshot("ios-browser-page");
+
+      const sheet = element(by.id("browser-sheet"));
+      await minimize.swipe("down", "fast", 0.32, 0.5, 0.5);
+      await waitFor(home).toBeVisible().withTimeout(10000);
+      await expect(element(by.id("browser-home-tab-2"))).toBeVisible();
+      await waitFor(sheet).not.toBeVisible().withTimeout(10000);
       await device.takeScreenshot("ios-notes-browser-tabs");
+
+      const profileTab = element(by.id("main-tab-profile"));
+      await tapUntilVisible(profileTab, element(by.id("profile-screen")));
+      await expect(resume).toBeVisible();
+      await device.takeScreenshot("ios-browser-cross-tab");
+      await tapUntilVisible(resume, address);
+      await waitForWeb(() => expect(heading).toHaveText("Second browser tab"));
+
+      await device.terminateApp();
+      await device.launchApp({
+        newInstance: true,
+        launchArgs: { detoxEnableSynchronization: 0 }
+      });
+      await device.disableSynchronization();
+      await tapUntilVisible(browserTab, home, 10000);
+      await tapUntilVisible(homeResume, address);
+      await waitForWeb(() => expect(heading).toHaveText("Second browser tab"));
+      await tapUntilVisible(minimize, home);
+      await tapUntilVisible(firstTab, address);
+      await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
+      await web(by.id("browser-webview")).element(by.web.id("popup")).tap();
+      await waitFor(element(by.id("browser-tab-3")))
+        .toBeVisible()
+        .withTimeout(10000);
+      await waitForWeb(() => expect(heading).toHaveText("Second browser tab"));
+      await tapUntilVisible(minimize, home);
+      await element(by.id("browser-close-tab-3")).tap();
+      await waitFor(element(by.id("browser-home-tab-3")))
+        .not.toExist()
+        .withTimeout(10000);
+      await tapUntilVisible(firstTab, address);
+      await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
+
+      await pageAddTab.tap();
+      await waitFor(address).toHaveText("").withTimeout(10000);
+      await address.tap();
+      await address.typeText(`http://localhost:${port}/dialogs`);
+      await address.tapReturnKey();
+      await waitForWeb(() =>
+        expect(heading).toHaveText("Page dialogs were dismissed")
+      );
+
+      await device.takeScreenshot("ios-browser-close-page");
+      await tapUntilVisible(element(by.id("browser-page-close-tab")), home);
+      await waitFor(element(by.id("browser-home-tab-4")))
+        .not.toExist()
+        .withTimeout(10000);
+      await tapUntilVisible(firstTab, address);
+      await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
     } finally {
       server.close();
     }

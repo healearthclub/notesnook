@@ -17,21 +17,26 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { strings } from "@notesnook/intl";
 import { useThemeColors } from "@notesnook/theme";
 import React, { useEffect, useRef } from "react";
 import {
   AppState,
   AppStateStatus,
   KeyboardAvoidingView,
+  Platform,
   TextInput,
   View
 } from "react-native";
 import Editor from ".";
+import { Button } from "../../components/ui/button";
 import useGlobalSafeAreaInsets from "../../hooks/use-global-safe-area-insets";
 import useIsFloatingKeyboard from "../../hooks/use-is-floating-keyboard";
+import useKeyboard from "../../hooks/use-keyboard";
 import { DDS } from "../../services/device-detection";
 import { useSettingStore } from "../../stores/use-setting-store";
 import { editorRef } from "../../utils/global-refs";
+import { useTabStore } from "./tiptap/use-tab-store";
 import { editorController, textInput } from "./tiptap/utils";
 
 export type PaneWidths = {
@@ -65,6 +70,7 @@ export const EditorWrapper = ({
   const loading = false;
   const insets = useGlobalSafeAreaInsets();
   const floating = useIsFloatingKeyboard();
+  const { keyboardShown } = useKeyboard();
   const introCompleted = useSettingStore(
     (state) => state.settings.introCompleted
   );
@@ -142,7 +148,25 @@ export const EditorWrapper = ({
             style={{ height: 1, padding: 0, width: 1, position: "absolute" }}
             blurOnSubmit={false}
           />
-          <Editor key="editor" withController={true} />
+          <View style={{ flex: 1 }}>
+            <Editor key="editor" withController={true} />
+          </View>
+          {Platform.OS === "ios" && keyboardShown && !floating ? (
+            <View style={{ alignItems: "flex-end", paddingHorizontal: 8 }}>
+              <Button
+                testID="editor-keyboard-done"
+                accessibilityRole="button"
+                title={strings.done()}
+                bold
+                style={{ alignSelf: "flex-end", minHeight: 44 }}
+                buttonType={{ text: colors.primary.accent }}
+                onPress={() => {
+                  const tabId = useTabStore.getState().currentTab;
+                  if (tabId) editorController.current.commands.blur(tabId);
+                }}
+              />
+            </View>
+          ) : null}
         </KeyboardAvoidingView>
       )}
     </View>

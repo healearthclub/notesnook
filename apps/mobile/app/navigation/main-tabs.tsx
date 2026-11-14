@@ -21,9 +21,13 @@ import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
 import { Keyboard, Platform, StyleSheet, View } from "react-native";
 import { BottomTabBar } from "../DesignSystem/UIComponents/BottomTabBar";
 import { BrowserControls, BrowserScreen } from "../features/browser";
+import { BrowserTab, BrowserTabCard } from "../features/browser/browser-home";
 import { YouTubeMiniPlayer } from "../features/browser/youtube-mini-player";
 import { readYouTubeResume } from "../features/browser/youtube-resume";
-import type { YouTubePlayback } from "../features/browser/youtube-playback";
+import {
+  getYouTubeVideoId,
+  type YouTubePlayback
+} from "../features/browser/youtube-playback";
 import {
   GoogleScreen,
   googleScreenBackground
@@ -78,6 +82,8 @@ function MainTabs({ children }: PropsWithChildren) {
   const [activeTab, setActiveTab] = useState<Tab>("notes");
   const [browserOpened, setBrowserOpened] = useState(false);
   const browserControls = useRef<BrowserControls>(null);
+  const [browserPreview, setBrowserPreview] = useState<BrowserTab | null>(null);
+  const [openYouTubeOnMount, setOpenYouTubeOnMount] = useState(false);
   const [youtubePlayback, setYouTubePlayback] =
     useState<YouTubePlayback | null>(() => readYouTubeResume() ?? null);
   const [profileOpened, setProfileOpened] = useState(false);
@@ -94,6 +100,13 @@ function MainTabs({ children }: PropsWithChildren) {
     return () => eUnSubscribeEvent(eOnLoadNote, openNotes);
   }, []);
 
+  useEffect(() => {
+    if (browserActive && openYouTubeOnMount && browserControls.current) {
+      browserControls.current.openYouTube();
+      setOpenYouTubeOnMount(false);
+    }
+  }, [browserActive, openYouTubeOnMount]);
+
   function selectTab(tab: Tab) {
     if (tab === activeTab) return;
     Keyboard.dismiss();
@@ -102,16 +115,22 @@ function MainTabs({ children }: PropsWithChildren) {
     setActiveTab(tab);
   }
 
+  function openYouTube() {
+    if (browserControls.current) browserControls.current.openYouTube();
+    else setOpenYouTubeOnMount(true);
+    selectTab("browser");
+  }
+
   const toolbarAccessory =
     notesActive && showTabBar && youtubePlayback ? (
       <YouTubeMiniPlayer
         playback={youtubePlayback}
-        onOpen={() => selectTab("browser")}
+        onOpen={openYouTube}
         onToggle={() => {
           if (
             !browserControls.current?.toggleYouTube(!youtubePlayback.playing)
           ) {
-            selectTab("browser");
+            openYouTube();
           }
         }}
       />
@@ -139,6 +158,8 @@ function MainTabs({ children }: PropsWithChildren) {
           >
             <BrowserScreen
               ref={browserControls}
+              active={browserActive}
+              onPreviewChange={setBrowserPreview}
               onYouTubePlaybackChange={setYouTubePlayback}
             />
           </View>
@@ -163,6 +184,22 @@ function MainTabs({ children }: PropsWithChildren) {
           </View>
         ) : null}
       </View>
+      {showTabBar &&
+      !browserActive &&
+      browserPreview &&
+      !(
+        notesActive &&
+        youtubePlayback &&
+        getYouTubeVideoId(browserPreview.address)
+      ) ? (
+        <BrowserTabCard
+          tab={browserPreview}
+          onPress={() => {
+            browserControls.current?.openCurrent();
+            selectTab("browser");
+          }}
+        />
+      ) : null}
       {showTabBar ? (
         <BottomTabBar
           tabs={tabs}

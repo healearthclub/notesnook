@@ -27,14 +27,41 @@ const keychainOptions = {
   accessible: Keychain.ACCESSIBLE.WHEN_UNLOCKED_THIS_DEVICE_ONLY
 };
 
-type Session = { token: string; email: string; expiresAt: number };
+type Account = { userId: string; email: string; expiresAt: number };
+type Session = Account & { token: string };
+
+function isAccount(value: unknown): value is Account {
+  if (!value || typeof value !== "object") return false;
+  const account = value as Partial<Account>;
+  return (
+    typeof account.userId === "string" &&
+    /^google:.+/.test(account.userId) &&
+    typeof account.email === "string" &&
+    typeof account.expiresAt === "number" &&
+    Number.isSafeInteger(account.expiresAt) &&
+    account.expiresAt > Date.now()
+  );
+}
+function isSession(value: unknown): value is Session {
+  return (
+    isAccount(value) &&
+    "token" in value &&
+    typeof value.token === "string" &&
+    /^[A-Za-z0-9_-]{43}$/.test(value.token)
+  );
+}
+
 type GoogleAuthModule = {
   openGoogleSignIn(): Promise<{ code: string; verifier: string } | null>;
 };
 
 export class GoogleSignInUnavailableError extends Error {}
 
-export const useOhaiAccount = create<{ email: string | null }>(() => ({
+export const useOhaiAccount = create<{
+  email: string | null;
+  userId: string | null;
+}>(() => ({
+  userId: null,
   email: null
 }));
 
@@ -42,8 +69,13 @@ async function readSession(): Promise<Session | null> {
   if (Platform.OS !== "ios") return null;
   const entry = await Keychain.getGenericPassword(keychainOptions);
   if (!entry) return null;
-  const session: Session = JSON.parse(entry.password);
-  if (session.expiresAt <= Date.now()) {
+  let session: unknown;
+  try {
+    session = JSON.parse(entry.password);
+  } catch {
+    // A corrupt Keychain entry cannot identify a Heal Earth Club account.
+  }
+  if (!isSession(session)) {
     await Keychain.resetGenericPassword(keychainOptions);
     return null;
   }
@@ -52,7 +84,32 @@ async function readSession(): Promise<Session | null> {
 
 export async function loadOhaiAccount() {
   const session = await readSession();
-  useOhaiAccount.setState({ email: session?.email ?? null });
+  if (!session) {
+    useOhaiAccount.setState({ email: null, userId: null });
+    return;
+  }
+
+  // Keep a locally valid account available when the device is offline.
+  const response = await request("/auth/native/session", {
+    headers: { Authorization: `Bearer ${session.token}` }
+  }).catch(() => null);
+  const account: unknown = response?.ok
+    ? await response.json().catch(() => null)
+    : null;
+  // A concurrent sign-in or sign-out may have replaced this credential.
+  if ((await readSession())?.token !== session.token) return;
+  if (
+    response?.status === 401 ||
+    (response?.ok && (!isAccount(account) || account.userId !== session.userId))
+  ) {
+    await Keychain.resetGenericPassword(keychainOptions);
+    useOhaiAccount.setState({ email: null, userId: null });
+    return;
+  }
+  useOhaiAccount.setState({
+    email: isAccount(account) ? account.email : session.email,
+    userId: session.userId
+  });
 }
 
 async function request(path: string, init?: RequestInit) {
@@ -95,15 +152,8 @@ export async function continueWithGoogle() {
   });
   if (!result.ok) throw new Error("Sign-in expired. Please try again.");
 
-  const session: Partial<Session> = await result.json();
-  if (
-    typeof session.token !== "string" ||
-    !/^[A-Za-z0-9_-]{43}$/.test(session.token) ||
-    typeof session.email !== "string" ||
-    typeof session.expiresAt !== "number" ||
-    !Number.isSafeInteger(session.expiresAt) ||
-    session.expiresAt <= Date.now()
-  ) {
+  const session: unknown = await result.json();
+  if (!isSession(session)) {
     throw new Error("Could not verify the ohai session.");
   }
   const saved = await Keychain.setGenericPassword(
@@ -112,7 +162,7 @@ export async function continueWithGoogle() {
     keychainOptions
   );
   if (!saved) throw new Error("Could not save your sign-in on this device.");
-  useOhaiAccount.setState({ email: session.email });
+  useOhaiAccount.setState({ email: session.email, userId: session.userId });
 }
 
 export async function signOutOfOhai() {
@@ -129,5 +179,5 @@ export async function signOutOfOhai() {
   if (!(await Keychain.resetGenericPassword(keychainOptions)) && session) {
     throw new Error("Could not clear the saved sign-in. Please try again.");
   }
-  useOhaiAccount.setState({ email: null });
+  useOhaiAccount.setState({ email: null, userId: null });
 }
