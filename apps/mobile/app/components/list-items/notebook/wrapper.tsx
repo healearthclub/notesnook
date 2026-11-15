@@ -37,7 +37,7 @@ export const openNotebook = (item: Notebook | BaseTrashItem<Notebook>) => {
 
   if (isTrash) {
     presentDialog({
-      title: strings.restoreNotebook(),
+      title: strings.restoreFolder(),
       positiveText: strings.restore(),
       negativeText: strings.delete(),
       positivePress: async () => {
@@ -45,7 +45,7 @@ export const openNotebook = (item: Notebook | BaseTrashItem<Notebook>) => {
         Navigation.queueRoutesForUpdate();
         useSelectionStore.getState().setSelectionMode(undefined);
         ToastManager.show({
-          heading: strings.notebookRestored(),
+          heading: strings.folderRestored(),
           type: "success"
         });
       },
@@ -54,7 +54,7 @@ export const openNotebook = (item: Notebook | BaseTrashItem<Notebook>) => {
         useTrashStore.getState().refresh();
         useSelectionStore.getState().setSelectionMode(undefined);
         ToastManager.show({
-          heading: strings.permanentlyDeletedNotebook(),
+          heading: strings.permanentlyDeletedFolder(),
           type: "success",
           context: "local"
         });

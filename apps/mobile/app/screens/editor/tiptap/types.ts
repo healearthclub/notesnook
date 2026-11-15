@@ -69,6 +69,7 @@ export type EditorProps = {
   noToolbar?: boolean;
   noHeader?: boolean;
   withController?: boolean;
+  keyboardToolbar?: boolean;
   editorId?: string;
   onLoad?: () => void;
   onChange?: (html: string) => void;

@@ -136,7 +136,7 @@ export const SideMenuNotebooks = () => {
     >
       {!notebooks || notebooks.placeholders.length === 0 ? (
         <SideMenuListEmpty
-          placeholder={strings.emptyPlaceholders("notebook")}
+          placeholder={strings.noFolders()}
           isLoading={isLoading}
         />
       ) : (
@@ -170,7 +170,7 @@ export const SideMenuNotebooks = () => {
             }}
           >
             <TextInput
-              placeholder={strings.filterNotebooks()}
+              placeholder={strings.filterFolders()}
               style={{
                 fontFamily: appBodyFont,
                 fontSize: AppFontSize.xs,
@@ -276,7 +276,7 @@ const NotebookItemWrapper = React.memo(
             Properties.present(item.notebook, false, [
               {
                 id: "select",
-                title: strings.select() + " " + strings.dataTypes["notebook"](),
+                title: strings.selectFolder(),
                 icon: "checkbox-outline",
                 onPress: () => {
                   const store = useSideMenuNotebookSelectionStore;

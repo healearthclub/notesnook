@@ -40,30 +40,52 @@ import { MMKV } from "../../common/database/mmkv";
 import AppIcon from "../../components/ui/AppIcon";
 import useGlobalSafeAreaInsets from "../../hooks/use-global-safe-area-insets";
 import { blockedBrowserHost } from "./browser-guard";
-import { BrowserHome, BrowserTab, tabLabel } from "./browser-home";
-import { BrowserPage, BrowserPageControls, isWebAddress } from "./browser-page";
-import { getYouTubeVideoId, YouTubePlayback } from "./youtube-playback";
+import { BrowserHome, BrowserTab } from "./browser-home";
 import {
+  addressFromInput,
+  BrowserPage,
+  BrowserPageControls,
+  isWebAddress
+} from "./browser-page";
+import { faviconForAddress } from "./browser-metadata";
+import { getYouTubeVideoId } from "./youtube-playback";
+import {
+  clearYouTubeResume,
+  parseYouTubeResume,
   readYouTubeResume,
   resumeYouTubeAddress,
-  saveYouTubeResume,
   YouTubeResume
 } from "./youtube-resume";
 
 const storageKey = "nn::browserTabs";
-type TabSession = { tabs: BrowserTab[]; selectedId: number };
+type SessionTab = BrowserTab & { youtube?: YouTubeResume };
+type TabSession = { tabs: SessionTab[]; selectedId: number };
+
+export type BrowserMediaCard = { tabId: number; playback: YouTubeResume };
+
+function browserMediaCards(tabs: SessionTab[]): BrowserMediaCard[] {
+  return tabs.flatMap(({ id, address, youtube }) =>
+    youtube && getYouTubeVideoId(address) === youtube.videoId
+      ? [{ tabId: id, playback: youtube }]
+      : []
+  );
+}
+
+export function readBrowserMediaCards() {
+  return browserMediaCards(restoreSession(readYouTubeResume()).tabs);
+}
 
 export type BrowserControls = {
   openCurrent: () => void;
-  openYouTube: () => void;
-  toggleYouTube: (shouldPlay: boolean) => boolean;
+  openMediaTab: (tabId: number) => void;
+  toggleYouTube: (tabId: number, shouldPlay: boolean) => boolean;
 };
 
 type BrowserScreenProps = {
   ref?: Ref<BrowserControls>;
   active: boolean;
   onPreviewChange: (preview: BrowserTab | null) => void;
-  onYouTubePlaybackChange: (playback: YouTubePlayback | null) => void;
+  onMediaChange: (media: BrowserMediaCard[]) => void;
 };
 
 function restoreSession(playback?: YouTubeResume): TabSession {
@@ -86,23 +108,63 @@ function restoreSession(playback?: YouTubeResume): TabSession {
       return true;
     });
     if (tabs.length) {
+      const legacyTab =
+        playback &&
+        tabs.find(
+          ({ address }) => getYouTubeVideoId(address) === playback.videoId
+        );
       return {
-        tabs,
+        tabs: tabs.map((tab) => {
+          const youtube = parseYouTubeResume(tab.youtube);
+          return {
+            ...tab,
+            youtube:
+              youtube?.videoId === getYouTubeVideoId(tab.address)
+                ? youtube
+                : legacyTab && legacyTab.id === tab.id
+                ? playback
+                : undefined
+          };
+        }),
         selectedId: ids.has(saved.selectedId) ? saved.selectedId : tabs[0].id
       };
     }
   }
   return {
-    tabs: [{ id: 1, address: playback ? resumeYouTubeAddress(playback) : "" }],
+    tabs: [
+      {
+        id: 1,
+        address: playback ? resumeYouTubeAddress(playback) : "",
+        youtube: playback
+      }
+    ],
     selectedId: 1
   };
+}
+
+const tabSites = new Map([
+  ["healearth.club", { label: "Heal Earth Club", icon: "compass-outline" }],
+  ["youtube.com", { label: "YouTube", icon: "play" }],
+  ["youtu.be", { label: "YouTube", icon: "play" }],
+  ["github.com", { label: "GitHub", icon: "github" }],
+  ["x.com", { label: "X", icon: "compass-outline" }]
+]);
+
+function tabSite(address: string) {
+  if (!address) return { label: "New tab", icon: "compass-outline" };
+  try {
+    const host = new URL(address).hostname.replace(/^(www|m)\./, "");
+    return tabSites.get(host) ?? { label: host, icon: "compass-outline" };
+  } catch {
+    return { label: "Website", icon: "compass-outline" };
+  }
 }
 
 export function BrowserScreen({
   ref,
   active,
   onPreviewChange,
-  onYouTubePlaybackChange
+  onMediaChange
 }: BrowserScreenProps) {
   const { colors } = useThemeColors();
   const insets = useGlobalSafeAreaInsets();
@@ -114,18 +176,17 @@ export function BrowserScreen({
     restoreSession(savedPlayback)
   );
   const nextId = useRef(Math.max(...tabs.map((tab) => tab.id)) + 1);
-  const [resumeTabId] = useState(() =>
-    savedPlayback
-      ? tabs.find(
-          (tab) => getYouTubeVideoId(tab.address) === savedPlayback.videoId
-        )?.id
-      : undefined
+  const [initialResumes] = useState(
+    () =>
+      new Map(
+        tabs.flatMap(({ id, youtube }) =>
+          youtube ? [[id, youtube] as const] : []
+        )
+      )
   );
-  const [opened, setOpened] = useState(
-    () => new Set([selectedId, ...(resumeTabId ? [resumeTabId] : [])])
-  );
+  const [opened, setOpened] = useState(() => new Set([selectedId]));
+  const blockedTabAddresses = useRef(new Map<number, string>());
   const players = useRef(new Map<number, BrowserPageControls>());
-  const playbackOwner = useRef(resumeTabId);
   const strip = useRef<ScrollView>(null);
   const tabPositions = useRef(new Map<number, number>());
   const selectedIndex = tabs.findIndex((tab) => tab.id === selectedId);
@@ -154,11 +215,13 @@ export function BrowserScreen({
   }, [tabs, selectedId]);
 
   useEffect(() => {
-    if (savedPlayback && resumeTabId === undefined) {
-      saveYouTubeResume();
-      onYouTubePlaybackChange(null);
-    }
-  }, [onYouTubePlaybackChange, resumeTabId, savedPlayback]);
+    if (savedPlayback) clearYouTubeResume();
+  }, [savedPlayback]);
+
+  useEffect(
+    () => onMediaChange(browserMediaCards(tabs)),
+    [onMediaChange, tabs]
+  );
 
   function revealTab(id: number) {
     const x = tabPositions.current.get(id);
@@ -189,54 +252,102 @@ export function BrowserScreen({
     setExpanded(false);
   }
 
-  function addTab(address = "") {
-    if (address && (!isWebAddress(address) || blockedBrowserHost(address)))
+  function addTab(address = "", fromHome = false) {
+    if (address && !isWebAddress(address)) return;
+    const blocked = !!blockedBrowserHost(address);
+    if (blocked && !fromHome) return;
+    const emptyTab =
+      tabs.length === 1 && !selectedTab?.address ? selectedTab : undefined;
+    const page = emptyTab && players.current.get(emptyTab.id);
+    if (fromHome && emptyTab && page) {
+      openTab(emptyTab.id);
+      page.navigate(address);
       return;
-    const id = nextId.current++;
+    }
+
+    const id = fromHome && emptyTab ? emptyTab.id : nextId.current++;
+    if (blocked) blockedTabAddresses.current.set(id, address);
     Keyboard.dismiss();
     setExpanded(true);
     setOpened((current) => new Set(current).add(id));
     setSession((current) => ({
-      tabs: [...current.tabs, { id, address }],
+      tabs: [
+        ...current.tabs.filter((tab) => tab.id !== id),
+        { id, address: blocked ? "" : address }
+      ],
       selectedId: id
     }));
   }
 
+  function submitHomeAddress(input: string) {
+    const address = addressFromInput(input);
+    if (address) addTab(address, true);
+  }
+
   function closeTab(id: number) {
-    const index = tabs.findIndex((tab) => tab.id === id);
-    if (index === -1) return;
+    if (!tabs.some((tab) => tab.id === id)) return;
     players.current.get(id)?.stop();
-    const fallback = tabs[index + 1] ?? tabs[index - 1];
-    if (playbackOwner.current === id) {
-      playbackOwner.current = undefined;
-      saveYouTubeResume();
-      onYouTubePlaybackChange(null);
-    }
     setOpened((current) => {
       const remaining = new Set(current);
       remaining.delete(id);
       return remaining;
     });
     tabPositions.current.delete(id);
-    const replacement = fallback ?? { id: nextId.current++, address: "" };
-    setSession({
-      tabs: fallback ? tabs.filter((tab) => tab.id !== id) : [replacement],
-      selectedId: id === selectedId ? replacement.id : selectedId
+    blockedTabAddresses.current.delete(id);
+    initialResumes.delete(id);
+    const emptyTab = { id: nextId.current++, address: "" };
+    setSession((current) => {
+      const index = current.tabs.findIndex((tab) => tab.id === id);
+      if (index === -1) return current;
+      const adjacent = current.tabs[index + 1] ?? current.tabs[index - 1];
+      return {
+        tabs: adjacent
+          ? current.tabs.filter((tab) => tab.id !== id)
+          : [emptyTab],
+        selectedId:
+          current.selectedId === id
+            ? (adjacent ?? emptyTab).id
+            : current.selectedId
+      };
     });
   }
 
-  function updateAddress(id: number, address: string, title?: string) {
+  function updateAddress(
+    id: number,
+    address: string,
+    title?: string,
+    favicon?: string
+  ) {
     if (blockedBrowserHost(address)) return;
     setSession((current) => {
       const tab = current.tabs.find((tab) => tab.id === id);
       if (!tab) return current;
       const nextTitle =
         title?.trim() || (tab.address === address ? tab.title : undefined);
-      if (tab.address === address && tab.title === nextTitle) return current;
+      const nextFavicon =
+        (favicon && faviconForAddress(address, favicon)) ||
+        (tab.address === address ? tab.favicon : undefined);
+      if (
+        tab.address === address &&
+        tab.title === nextTitle &&
+        tab.favicon === nextFavicon
+      )
+        return current;
       return {
         ...current,
         tabs: current.tabs.map((tab) =>
-          tab.id === id ? { id, address, title: nextTitle } : tab
+          tab.id === id
+            ? {
+                ...tab,
+                address,
+                title: nextTitle,
+                favicon: nextFavicon,
+                youtube:
+                  tab.youtube?.videoId === getYouTubeVideoId(address)
+                    ? tab.youtube
+                    : undefined
+              }
+            : tab
         )
       };
     });
@@ -248,32 +359,44 @@ export function BrowserScreen({
   }
 
   function updatePlayback(id: number, playback: YouTubeResume | null) {
-    const owner = playbackOwner.current;
-    if (owner !== id) {
-      if (!playback || id !== selectedId || !active) return;
-      if (owner !== undefined && !playback.playing) return;
-      playbackOwner.current = id;
-      if (owner !== undefined) players.current.get(owner)?.toggleYouTube(false);
-    }
-    if (!playback) playbackOwner.current = undefined;
-    saveYouTubeResume(playback ?? undefined);
-    onYouTubePlaybackChange(playback);
+    setSession((current) => {
+      const tab = current.tabs.find((item) => item.id === id);
+      if (!tab || (!tab.youtube && !playback)) return current;
+      if (
+        !tab.youtube &&
+        (id !== current.selectedId || !active || !playback?.playing)
+      ) {
+        return current;
+      }
+      if (playback && getYouTubeVideoId(tab.address) !== playback.videoId)
+        return current;
+      const previous = tab.youtube;
+      if (
+        previous?.videoId === playback?.videoId &&
+        previous?.title === playback?.title &&
+        previous?.playing === playback?.playing &&
+        previous?.position === playback?.position &&
+        previous?.progress === playback?.progress
+      )
+        return current;
+      return {
+        ...current,
+        tabs: current.tabs.map((item) =>
+          item.id === id ? { ...item, youtube: playback ?? undefined } : item
+        )
+      };
+    });
   }
 
   useImperativeHandle(ref, () => ({
     openCurrent() {
       openTab(selectedId);
     },
-    openYouTube() {
-      const id = playbackOwner.current;
-      if (id !== undefined) openTab(id);
+    openMediaTab(tabId) {
+      if (tabs.some(({ id }) => id === tabId)) openTab(tabId);
     },
-    toggleYouTube(shouldPlay) {
-      const id = playbackOwner.current;
-      return (
-        id !== undefined &&
-        (players.current.get(id)?.toggleYouTube(shouldPlay) ?? false)
-      );
+    toggleYouTube(tabId, shouldPlay) {
+      return players.current.get(tabId)?.toggleYouTube(shouldPlay) ?? false;
     }
   }));
 
@@ -335,6 +458,8 @@ export function BrowserScreen({
         accessibilityElementsHidden={expanded}
       >
         <BrowserHome
+          keyboardAvoidanceEnabled={active && !expanded}
+          onSubmitAddress={submitHomeAddress}
           tabs={tabs}
           selectedId={selectedId}
           onOpen={openTab}
@@ -367,99 +492,90 @@ export function BrowserScreen({
             }
           ]}
         >
-          <View>
-            <GestureDetector gesture={dismissSwipe}>
+          <GestureDetector gesture={dismissSwipe}>
+            <View
+              collapsable={false}
+              style={[
+                styles.strip,
+                { borderBottomColor: colors.primary.border }
+              ]}
+            >
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Minimize browser page"
                 testID="browser-minimize-tab"
                 onPress={minimize}
-                style={styles.sheetHeader}
+                style={styles.control}
               >
                 <AppIcon
                   name="chevron-down"
                   color={colors.primary.heading}
                   size={25}
                 />
-                <View
-                  pointerEvents="none"
-                  style={[
-                    styles.grabber,
-                    { backgroundColor: colors.primary.border }
-                  ]}
-                />
               </Pressable>
-            </GestureDetector>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close browser page"
-              testID="browser-page-close-tab"
-              onPress={() => closeOpenPage(selectedId)}
-              style={[styles.control, styles.closePage]}
-            >
-              <AppIcon name="close" color={colors.primary.heading} size={22} />
-            </Pressable>
-          </View>
-          <View
-            style={[styles.strip, { borderBottomColor: colors.primary.border }]}
-          >
-            <ScrollView
-              ref={strip}
-              horizontal
-              keyboardShouldPersistTaps="handled"
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.stripContent}
-            >
-              {tabs.map((tab, index) => {
-                const selected = tab.id === selectedId;
-                const label = tabLabel(tab);
-                return (
-                  <Pressable
-                    key={tab.id}
-                    accessibilityRole="tab"
-                    accessibilityLabel={`${label}, tab ${index + 1} of ${tabs.length}`}
-                    accessibilityState={{ selected }}
-                    testID={`browser-tab-${tab.id}`}
-                    onLayout={({ nativeEvent }) => {
-                      tabPositions.current.set(tab.id, nativeEvent.layout.x);
-                      if (selected) revealTab(tab.id);
-                    }}
-                    onPress={() => selectTab(tab.id)}
-                    style={[
-                      styles.tab,
-                      {
-                        maxWidth: width * 0.55,
-                        borderBottomColor: selected
-                          ? colors.primary.heading
-                          : "transparent"
-                      }
-                    ]}
-                  >
-                    <Text
-                      numberOfLines={1}
-                      style={{
-                        color: selected
-                          ? colors.primary.heading
-                          : colors.primary.paragraph,
-                        fontWeight: selected ? "600" : "400"
+              <ScrollView
+                ref={strip}
+                horizontal
+                keyboardShouldPersistTaps="handled"
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.stripContent}
+              >
+                {tabs.map((tab, index) => {
+                  const selected = tab.id === selectedId;
+                  const { label, icon } = tabSite(tab.address);
+                  const color = selected
+                    ? colors.primary.heading
+                    : colors.primary.paragraph;
+                  return (
+                    <Pressable
+                      key={tab.id}
+                      accessibilityRole="tab"
+                      accessibilityLabel={`${label}, tab ${index + 1} of ${
+                        tabs.length
+                      }`}
+                      accessibilityState={{ selected }}
+                      testID={`browser-tab-${tab.id}`}
+                      onLayout={({ nativeEvent }) => {
+                        tabPositions.current.set(tab.id, nativeEvent.layout.x);
+                        if (selected) revealTab(tab.id);
                       }}
+                      onPress={() => selectTab(tab.id)}
+                      style={[
+                        styles.tab,
+                        {
+                          maxWidth: width * 0.55,
+                          borderBottomColor: selected
+                            ? colors.primary.heading
+                            : "transparent"
+                        }
+                      ]}
                     >
-                      {label}
-                    </Text>
-                  </Pressable>
-                );
-              })}
-            </ScrollView>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="New browser tab"
-              testID="browser-page-add-tab"
-              onPress={() => addTab()}
-              style={styles.control}
-            >
-              <AppIcon name="plus" size={22} />
-            </Pressable>
-          </View>
+                      <AppIcon name={icon} color={color} size={17} />
+                      <Text
+                        numberOfLines={1}
+                        style={{
+                          flexShrink: 1,
+                          color,
+                          fontWeight: selected ? "600" : "400"
+                        }}
+                      >
+                        {label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="New browser tab"
+                testID="browser-page-add-tab"
+                onPress={() => addTab()}
+                style={styles.control}
+              >
+                <AppIcon name="plus" size={22} />
+              </Pressable>
+            </View>
+          </GestureDetector>
           <GestureDetector gesture={swipe}>
             <View
               style={styles.screen}
@@ -470,8 +586,7 @@ export function BrowserScreen({
                 .filter((tab) => opened.has(tab.id))
                 .map((tab) => {
                   const selected = tab.id === selectedId;
-                  const resume =
-                    tab.id === resumeTabId ? savedPlayback : undefined;
+                  const resume = initialResumes.get(tab.id);
                   return (
                     <View
                       key={tab.id}
@@ -491,11 +606,14 @@ export function BrowserScreen({
                           else players.current.delete(tab.id);
                         }}
                         initialAddress={
-                          resume ? resumeYouTubeAddress(resume) : tab.address
+                          resume
+                            ? resumeYouTubeAddress(resume)
+                            : blockedTabAddresses.current.get(tab.id) ??
+                              tab.address
                         }
                         initialPlayback={resume}
-                        onNavigate={(address, title) =>
-                          updateAddress(tab.id, address, title)
+                        onNavigate={(address, title, favicon) =>
+                          updateAddress(tab.id, address, title, favicon)
                         }
                         onOpenWindow={(address) => {
                           if (active && expanded && selected && address)
@@ -519,30 +637,18 @@ export function BrowserScreen({
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   viewport: { overflow: "hidden" },
-  sheetHeader: {
-    minHeight: 44,
-    justifyContent: "center",
-    paddingHorizontal: 10
-  },
-  closePage: { position: "absolute", top: 0, right: 0 },
-  grabber: {
-    position: "absolute",
-    top: 9,
-    alignSelf: "center",
-    height: 4,
-    width: 36,
-    borderRadius: 2
-  },
   hidden: { opacity: 0 },
   strip: {
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: StyleSheet.hairlineWidth
   },
-  stripContent: { paddingHorizontal: 12, gap: 14 },
+  stripContent: { paddingHorizontal: 4, gap: 14 },
   tab: {
     minHeight: 44,
-    justifyContent: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
     borderBottomWidth: 2,
     paddingHorizontal: 4
   },

@@ -97,6 +97,7 @@ export interface RouteParams extends ParamListBase {
   Reminders: GenericRouteParam;
   SettingsGroup: GenericRouteParam;
   FluidPanelsView: { initialPage?: "editor" | "home" };
+  SendNote: { message: string };
   AppLock: GenericRouteParam;
   Settings: GenericRouteParam;
   Auth: AuthParams;

@@ -66,7 +66,7 @@ export const AddNotebookSheet = ({
 
     if (!title.current || title?.current.trim().length === 0) {
       ToastManager.show({
-        heading: strings.enterNotebookTitle(),
+        heading: strings.enterFolderTitle(),
         type: "error",
         context: "local"
       });
@@ -105,7 +105,7 @@ export const AddNotebookSheet = ({
 
     if (showMoveNotesOnComplete && id && !notebook?.id) {
       ToastManager.show({
-        heading: strings.notebookAdded(),
+        heading: strings.folderAdded(),
         type: "success",
         context: "global",
         actionText: strings.addNotes(),
@@ -140,7 +140,7 @@ export const AddNotebookSheet = ({
         }}
       >
         <DialogHeader
-          title={notebook ? strings.editNotebook() : strings.newNotebook()}
+          title={notebook ? strings.editFolder() : strings.newFolder()}
         />
 
         <Input
@@ -154,7 +154,7 @@ export const AddNotebookSheet = ({
               titleInput?.current?.focus();
             }, 300);
           }}
-          placeholder={strings.enterNotebookTitle()}
+          placeholder={strings.enterFolderTitle()}
           onSubmit={() => {
             descriptionInput.current?.focus();
           }}
@@ -169,7 +169,7 @@ export const AddNotebookSheet = ({
           onChangeText={(value) => {
             description.current = value;
           }}
-          placeholder={strings.enterNotebookDescription()}
+          placeholder={strings.enterFolderDescription()}
           returnKeyLabel={strings.next()}
           returnKeyType="next"
           defaultValue={notebook ? notebook.description : ""}

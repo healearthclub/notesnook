@@ -60,7 +60,7 @@ function confirmDeleteAllNotes(
 ) {
   return new Promise<{ delete: boolean; deleteNotes: boolean }>((resolve) => {
     presentDialog({
-      title: strings.doActions.delete.notebook(items.length),
+      title: strings.deleteFolders(items.length),
       positiveText: strings.delete(),
       negativeText: strings.cancel(),
       positivePress: async (_inputValue, value) => {
@@ -75,7 +75,7 @@ function confirmDeleteAllNotes(
       },
       context: context,
       check: {
-        info: strings.deleteContainingNotes(items.length),
+        info: strings.trashFoldersWithNotes(items.length),
         type: "transparent"
       }
     });
@@ -186,7 +186,10 @@ export const deleteItems = async (
 
   const deletedIds = [...itemIds];
   if (type === "notebook" || type === "note") {
-    const message = strings.actions.movedToTrash[type](itemIds.length);
+    const message =
+      type === "notebook"
+        ? strings.foldersMovedToTrash(itemIds.length)
+        : strings.actions.movedToTrash.note(itemIds.length);
     ToastManager.show({
       heading: message,
       type: "success",

@@ -175,9 +175,11 @@ export function MenuItem({
             color={
               item.icon === "crown"
                 ? colors.static.yellow
-                : isFocused
-                ? colors.selected.icon
-                : colors.secondary.icon
+                : item.icon === "folder-outline"
+                  ? colors.primary.accent
+                  : isFocused
+                    ? colors.selected.icon
+                    : colors.secondary.icon
             }
             size={AppFontSize.md}
           />

@@ -62,7 +62,11 @@ export const LeftMenus = ({
         Navigation.popToTop();
       }}
       name={canGoBack ? "arrow-left" : menuIcon}
-      color={colors.primary.icon}
+      color={
+        !canGoBack && menuIcon === "folder-outline"
+          ? colors.primary.accent
+          : colors.primary.icon
+      }
     />
   );
 };

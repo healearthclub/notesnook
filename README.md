@@ -18,6 +18,27 @@ This repository contains all the code required to build & use the Notesnook web,
 
 ## Developer guide
 
+### Start with the feature
+
+Use this map to find the owning feature and its smallest check. Read the feature README and entry point first. Follow imports into shared code when the change crosses that boundary.
+
+| Working on | Start here |
+| --- | --- |
+| iOS login or sign-up | [Login feature](apps/mobile/app/features/login/README.md) |
+| In-app Browser or address handling | [Browser feature](apps/mobile/app/features/browser/README.md) |
+| Cloud Backup metadata, encryption, or storage | [Backup client](packages/ohai-backup/README.md#contributor-map) and [backup Worker](servers/ohai-backup/README.md#contributor-map) |
+| Mobile navigation and shared controls | [Main tabs](apps/mobile/app/navigation/main-tabs.tsx) and [BottomTabBar](apps/mobile/app/DesignSystem/UIComponents/BottomTabBar.tsx) |
+| Notes UI, editor, or storage | [Mobile Notes entry point](apps/mobile/app/features/notes/index.ts), [editor](packages/editor), and [shared Core](packages/core) |
+| Web or desktop app | [Web client](apps/web) and [desktop shell](apps/desktop) |
+
+Try UI changes in the [clickable iOS prototype](docs/ui-prototype/index.html). Export a design snapshot and use `$ui-implementation-brief` to compare it with the current app and prepare a Markdown handoff. The [example brief](docs/ui-prototype/example-implementation-brief.md) shows the expected output.
+
+When the iOS UI changes, rebuild the simulator app and refresh the affected screenshots in the local UI review at `../output/notesnook-ios/ui-review/index.html`. Use the [iOS smoke flow](apps/mobile/e2e/tests/ios-smoke.e2e.ts) with offline sample data. Keep the same screenshot filenames and refresh the embedded copies when sharing the review in Codex.
+
+Run the smallest check first. If a check fails, report the command, failing test or `file:line`, the first actionable error, and the path to the full log. Include expected and actual values when they explain the failure. Keep full logs out of agent context unless the short excerpt is insufficient.
+
+For a before-and-after benchmark, use the same tasks: edit a login label, change Browser URL handling, and add backup metadata. Record model input and cached tokens, distinct files read, tool-output bytes read, reruns, and elapsed time. Keep the model, prompts, and starting implementation comparable. This is a measurement baseline. Savings require observed results. See the [agent benchmark workflow](scripts/agent-benchmark/README.md).
+
 ### Technologies & languages
 
 Notesnook is built using the following technologies:

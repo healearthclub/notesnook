@@ -18,16 +18,15 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { useThemeColors } from "@notesnook/theme";
 import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
-import { Keyboard, Platform, StyleSheet, View } from "react-native";
+import { Keyboard, Platform, ScrollView, StyleSheet, View } from "react-native";
 import { BottomTabBar } from "../DesignSystem/UIComponents/BottomTabBar";
-import { BrowserControls, BrowserScreen } from "../features/browser";
+import {
+  BrowserControls,
+  BrowserScreen,
+  readBrowserMediaCards
+} from "../features/browser";
 import { BrowserTab, BrowserTabCard } from "../features/browser/browser-home";
 import { YouTubeMiniPlayer } from "../features/browser/youtube-mini-player";
-import { readYouTubeResume } from "../features/browser/youtube-resume";
-import {
-  getYouTubeVideoId,
-  type YouTubePlayback
-} from "../features/browser/youtube-playback";
 import {
   GoogleScreen,
   googleScreenBackground
@@ -40,7 +39,7 @@ import useGlobalSafeAreaInsets, {
 import { eSubscribeEvent, eUnSubscribeEvent } from "../services/event-manager";
 import type { NavigationProps } from "../services/navigation";
 import { useSettingStore } from "../stores/use-setting-store";
-import { eOnLoadNote } from "../utils/events";
+import { eOnEnterEditor, eOnExitEditor, eOnLoadNote } from "../utils/events";
 
 const tabs = [
   {
@@ -81,11 +80,11 @@ function MainTabs({ children }: PropsWithChildren) {
   const fullscreen = useSettingStore((state) => state.fullscreen);
   const [activeTab, setActiveTab] = useState<Tab>("notes");
   const [browserOpened, setBrowserOpened] = useState(false);
+  const [notesEditorVisible, setNotesEditorVisible] = useState(false);
   const browserControls = useRef<BrowserControls>(null);
   const [browserPreview, setBrowserPreview] = useState<BrowserTab | null>(null);
-  const [openYouTubeOnMount, setOpenYouTubeOnMount] = useState(false);
-  const [youtubePlayback, setYouTubePlayback] =
-    useState<YouTubePlayback | null>(() => readYouTubeResume() ?? null);
+  const [mediaTabToOpen, setMediaTabToOpen] = useState<number>();
+  const [browserMedia, setBrowserMedia] = useState(readBrowserMediaCards);
   const [profileOpened, setProfileOpened] = useState(false);
   const notesActive = activeTab === "notes";
   const browserActive = activeTab === "browser";
@@ -96,16 +95,28 @@ function MainTabs({ children }: PropsWithChildren) {
     const openNotes = (event?: { refresh?: boolean }) => {
       if (!event?.refresh) setActiveTab("notes");
     };
+    const showEditor = () => setNotesEditorVisible(true);
+    const hideEditor = () => setNotesEditorVisible(false);
     eSubscribeEvent(eOnLoadNote, openNotes);
-    return () => eUnSubscribeEvent(eOnLoadNote, openNotes);
+    eSubscribeEvent(eOnEnterEditor, showEditor);
+    eSubscribeEvent(eOnExitEditor, hideEditor);
+    return () => {
+      eUnSubscribeEvent(eOnLoadNote, openNotes);
+      eUnSubscribeEvent(eOnEnterEditor, showEditor);
+      eUnSubscribeEvent(eOnExitEditor, hideEditor);
+    };
   }, []);
 
   useEffect(() => {
-    if (browserActive && openYouTubeOnMount && browserControls.current) {
-      browserControls.current.openYouTube();
-      setOpenYouTubeOnMount(false);
+    if (
+      browserActive &&
+      mediaTabToOpen !== undefined &&
+      browserControls.current
+    ) {
+      browserControls.current.openMediaTab(mediaTabToOpen);
+      setMediaTabToOpen(undefined);
     }
-  }, [browserActive, openYouTubeOnMount]);
+  }, [browserActive, mediaTabToOpen]);
 
   function selectTab(tab: Tab) {
     if (tab === activeTab) return;
@@ -115,26 +126,58 @@ function MainTabs({ children }: PropsWithChildren) {
     setActiveTab(tab);
   }
 
-  function openYouTube() {
-    if (browserControls.current) browserControls.current.openYouTube();
-    else setOpenYouTubeOnMount(true);
+  function openMediaTab(id: number) {
+    if (browserControls.current) browserControls.current.openMediaTab(id);
+    else setMediaTabToOpen(id);
     selectTab("browser");
   }
 
-  const toolbarAccessory =
-    notesActive && showTabBar && youtubePlayback ? (
-      <YouTubeMiniPlayer
-        playback={youtubePlayback}
-        onOpen={openYouTube}
-        onToggle={() => {
-          if (
-            !browserControls.current?.toggleYouTube(!youtubePlayback.playing)
-          ) {
-            openYouTube();
-          }
+  const previewCard =
+    browserPreview &&
+    !browserMedia.some(({ tabId }) => tabId === browserPreview.id) ? (
+      <BrowserTabCard
+        tab={browserPreview}
+        onPress={() => {
+          browserControls.current?.openCurrent();
+          selectTab("browser");
         }}
       />
     ) : null;
+
+  const mediaStack =
+    browserMedia.length > 0 ? (
+      <ScrollView
+        testID="browser-media-stack"
+        style={styles.mediaStack}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        {browserMedia.map(({ tabId, playback }) => (
+          <YouTubeMiniPlayer
+            key={tabId}
+            playback={playback}
+            onOpen={() => openMediaTab(tabId)}
+            onToggle={() => {
+              if (
+                !browserControls.current?.toggleYouTube(
+                  tabId,
+                  !playback.playing
+                )
+              ) {
+                openMediaTab(tabId);
+              }
+            }}
+          />
+        ))}
+        {previewCard}
+      </ScrollView>
+    ) : (
+      previewCard
+    );
+
+  const stackAboveSearch =
+    notesActive && showTabBar && !notesEditorVisible && browserMedia.length > 0;
+  const toolbarAccessory = stackAboveSearch ? mediaStack : null;
 
   return (
     <View style={[styles.fill, { backgroundColor: colors.primary.background }]}>
@@ -160,7 +203,7 @@ function MainTabs({ children }: PropsWithChildren) {
               ref={browserControls}
               active={browserActive}
               onPreviewChange={setBrowserPreview}
-              onYouTubePlaybackChange={setYouTubePlayback}
+              onMediaChange={setBrowserMedia}
             />
           </View>
         ) : null}
@@ -184,22 +227,7 @@ function MainTabs({ children }: PropsWithChildren) {
           </View>
         ) : null}
       </View>
-      {showTabBar &&
-      !browserActive &&
-      browserPreview &&
-      !(
-        notesActive &&
-        youtubePlayback &&
-        getYouTubeVideoId(browserPreview.address)
-      ) ? (
-        <BrowserTabCard
-          tab={browserPreview}
-          onPress={() => {
-            browserControls.current?.openCurrent();
-            selectTab("browser");
-          }}
-        />
-      ) : null}
+      {showTabBar && !browserActive && !stackAboveSearch ? mediaStack : null}
       {showTabBar ? (
         <BottomTabBar
           tabs={tabs}
@@ -214,5 +242,6 @@ function MainTabs({ children }: PropsWithChildren) {
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
+  mediaStack: { flexGrow: 0, maxHeight: 174 },
   hidden: { opacity: 0 }
 });

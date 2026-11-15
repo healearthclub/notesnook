@@ -294,6 +294,7 @@ AppNavigation.displayName = "AppNavigation";
 let Intro: any = null;
 let Auth: any = null;
 let MainScreen: any = null;
+let SendNote: any = null;
 let LinkNotebooks: any = null;
 let MoveNotebook: any = null;
 let MoveNotes: any = null;
@@ -421,6 +422,18 @@ export const RootNavigation = () => {
               initialUrl?.type === "note"
                 ? "editor"
                 : undefined
+          }}
+        />
+
+        <RootStack.Screen
+          name="SendNote"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom"
+          }}
+          getComponent={() => {
+            SendNote = SendNote || require("../screens/send-note").default;
+            return SendNote;
           }}
         />
 

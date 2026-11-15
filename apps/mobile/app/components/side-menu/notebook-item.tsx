@@ -169,7 +169,11 @@ export const NotebookItem = ({
           <IconButton
             size={AppFontSize.md}
             color={
-              selected || isFocused ? colors.selected.icon : colors.primary.icon
+              !item.hasChildren || disableExpand
+                ? colors.primary.accent
+                : selected || isFocused
+                  ? colors.selected.icon
+                  : colors.primary.icon
             }
             testID={item.hasChildren ? `expand-notebook-${index}` : ""}
             onPress={() => {
@@ -190,7 +194,7 @@ export const NotebookItem = ({
             }}
             name={
               !item.hasChildren || disableExpand
-                ? "book-outline"
+                ? "folder-outline"
                 : expanded
                   ? "chevron-down"
                   : "chevron-right"

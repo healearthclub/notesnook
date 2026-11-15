@@ -71,7 +71,7 @@ export function YouTubeMiniPlayer({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={
-          playback.playing ? "Pause YouTube video" : "Play YouTube video"
+          (playback.playing ? "Pause" : "Play") + ": " + playback.title
         }
         testID="youtube-mini-player-toggle"
         onPress={onToggle}

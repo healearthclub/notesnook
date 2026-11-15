@@ -180,11 +180,13 @@ export const Items = ({
                   : AppFontSize.lg
             }
             color={
-              item.checked
-                ? item.activeColor || colors.primary.accent
-                : item.id.match(/(delete|trash)/g)
-                  ? colors.error.icon
-                  : colors.secondary.icon
+              item.icon === "folder-outline"
+                ? colors.primary.accent
+                : item.checked
+                  ? item.activeColor || colors.primary.accent
+                  : item.id.match(/(delete|trash)/g)
+                    ? colors.error.icon
+                    : colors.secondary.icon
             }
           />
         </Pressable>
@@ -277,11 +279,13 @@ export const Items = ({
               allowFontScaling
               size={DDS.isTab ? AppFontSize.xxl : AppFontSize.md + 4}
               color={
-                item.checked
-                  ? item.activeColor || colors.primary.accent
-                  : item.id === "delete" || item.id === "trash"
-                    ? colors.error.icon
-                    : colors.secondary.icon
+                item.icon === "folder-outline"
+                  ? colors.primary.accent
+                  : item.checked
+                    ? item.activeColor || colors.primary.accent
+                    : item.id === "delete" || item.id === "trash"
+                      ? colors.error.icon
+                      : colors.secondary.icon
               }
             />
 

@@ -185,7 +185,7 @@ export const SideMenu = React.memo(function SideMenu({
       },
       {
         key: "notebooks",
-        title: strings.notebooks()
+        title: strings.folders()
       },
       {
         key: "tags",
@@ -235,7 +235,7 @@ const TabBar = (props: SimpleTabBarProps) => {
       case "home":
         return "home-outline";
       case "notebooks":
-        return "book-outline";
+        return "folder-outline";
       case "tags":
         return "pound";
       default:
@@ -323,7 +323,7 @@ const TabBar = (props: SimpleTabBarProps) => {
                           ToastManager.show({
                             context: "local",
                             type: "error",
-                            message: strings.noNotebooksSelectedToMove()
+                            message: strings.noFoldersSelectedToMove()
                           });
                           return;
                         }
@@ -402,6 +402,9 @@ const TabBar = (props: SimpleTabBarProps) => {
                   return (
                     <Pressable
                       key={route.key}
+                      accessibilityRole="tab"
+                      accessibilityLabel={route.title}
+                      accessibilityState={{ selected: isFocused }}
                       testID={`tab-${route.key}`}
                       onPress={() => {
                         props.jumpTo(route.key);
@@ -433,7 +436,11 @@ const TabBar = (props: SimpleTabBarProps) => {
                       <Icon
                         name={getIcon(route.key)}
                         color={
-                          isFocused ? colors.selected.icon : colors.primary.icon
+                          route.key === "notebooks"
+                            ? colors.primary.accent
+                            : isFocused
+                              ? colors.selected.icon
+                              : colors.primary.icon
                         }
                         size={AppFontSize.lg}
                       />

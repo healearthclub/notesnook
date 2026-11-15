@@ -19,7 +19,9 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { useThemeColors } from "@notesnook/theme";
 import React, { Ref, useImperativeHandle, useRef, useState } from "react";
 import {
+  Alert,
   Keyboard,
+  Linking,
   Pressable,
   StyleSheet,
   Text,
@@ -30,6 +32,10 @@ import WebView, { WebViewMessageEvent } from "react-native-webview";
 import AppIcon from "../../components/ui/AppIcon";
 
 import { blockedBrowserHost, isYouTubeLookalike } from "./browser-guard";
+import {
+  observeBrowserMetadata,
+  readBrowserMetadata
+} from "./browser-metadata";
 import { inlineVideoScript } from "./video-playback";
 import {
   getYouTubeVideoId,
@@ -44,6 +50,18 @@ function isWebAddress(url: string) {
   return /^https?:\/\//i.test(url);
 }
 
+function isXGoogleSignIn(source: string, target: string) {
+  try {
+    const sourceOrigin = new URL(source).origin;
+    return (
+      (sourceOrigin === "https://x.com" || sourceOrigin === "https://twitter.com") &&
+      new URL(target).origin === "https://accounts.google.com"
+    );
+  } catch {
+    return false;
+  }
+}
+
 function addressFromInput(input: string) {
   const value = input.trim();
   if (!value) return;
@@ -54,9 +72,10 @@ function addressFromInput(input: string) {
   return `https://duckduckgo.com/?q=${encodeURIComponent(value)}`;
 }
 
-export { isWebAddress };
+export { addressFromInput, isWebAddress };
 
 export type BrowserPageControls = {
+  navigate: (address: string) => void;
   toggleYouTube: (shouldPlay: boolean) => boolean;
   stop: () => void;
 };
@@ -66,7 +85,7 @@ type BrowserPageProps = {
   selected: boolean;
   initialAddress: string;
   initialPlayback?: YouTubeResume;
-  onNavigate: (address: string, title?: string) => void;
+  onNavigate: (address: string, title?: string, favicon?: string) => void;
   onBlocked: () => void;
   onClose: () => void;
   onOpenWindow: (address: string) => void;
@@ -88,6 +107,7 @@ export function BrowserPage({
   const webView = useRef<WebView>(null);
   const editingAddress = useRef(false);
   const currentAddress = useRef(initialAddress);
+  const xSignInPromptOpen = useRef(false);
   const youtubeSession = useRef<YouTubeSession>(undefined);
   const nextYouTubeSession = useRef(0);
   const checkpoint = useRef(initialPlayback);
@@ -103,24 +123,21 @@ export function BrowserPage({
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  useImperativeHandle(
-    ref,
-    () => ({
-      stop() {
-        webView.current?.stopLoading();
-        setLoading(false);
-      },
-      toggleYouTube(shouldPlay) {
-        const session = youtubeSession.current;
-        if (!session || !livePlayback.current || !webView.current) return false;
-        webView.current.injectJavaScript(
-          toggleYouTubePlayback(session, shouldPlay)
-        );
-        return true;
-      }
-    }),
-    []
-  );
+  useImperativeHandle(ref, () => ({
+    navigate: openAddress,
+    stop() {
+      webView.current?.stopLoading();
+      setLoading(false);
+    },
+    toggleYouTube(shouldPlay) {
+      const session = youtubeSession.current;
+      if (!session || !livePlayback.current || !webView.current) return false;
+      webView.current.injectJavaScript(
+        toggleYouTubePlayback(session, shouldPlay)
+      );
+      return true;
+    }
+  }));
 
   function resetYouTubeSession() {
     youtubeSession.current = undefined;
@@ -316,12 +333,42 @@ export function BrowserPage({
             onOpenWindow={({ nativeEvent }) => {
               const url = nativeEvent.targetUrl;
               if (
-                !blockedHost.current &&
-                !blockedBrowserHost(url) &&
-                isWebAddress(url)
-              ) {
-                onOpenWindow(url);
+                blockedHost.current ||
+                blockedBrowserHost(url) ||
+                !isWebAddress(url)
+              )
+                return;
+
+              if (isXGoogleSignIn(currentAddress.current, url)) {
+                if (!selected || xSignInPromptOpen.current) return;
+                xSignInPromptOpen.current = true;
+                const dismissPrompt = () => {
+                  xSignInPromptOpen.current = false;
+                };
+                // Restart at X so Google can return to its opener in the system browser.
+                Alert.alert(
+                  "Sign in to X in your browser",
+                  "Open X and choose Continue with Google again. You’ll stay signed in to X in that browser.",
+                  [
+                    { text: "Cancel", style: "cancel", onPress: dismissPrompt },
+                    {
+                      text: "Open browser",
+                      onPress: () => {
+                        dismissPrompt();
+                        Linking.openURL("https://x.com/i/flow/login").catch(() => {
+                          Alert.alert(
+                            "Couldn’t open X",
+                            "Open x.com in your browser to sign in with Google."
+                          );
+                        });
+                      }
+                    }
+                  ],
+                  { cancelable: true, onDismiss: dismissPrompt }
+                );
+                return;
               }
+              onOpenWindow(url);
             }}
             onLoadStart={() => {
               if (blockedHost.current) return;
@@ -339,10 +386,21 @@ export function BrowserPage({
               observeYouTubePage(nativeEvent.url);
               if (isWebAddress(nativeEvent.url)) {
                 onNavigate(nativeEvent.url, nativeEvent.title);
+                webView.current?.injectJavaScript(observeBrowserMetadata);
               }
             }}
             onLoadEnd={() => setLoading(false)}
-            onMessage={receivePlaybackMessage}
+            onMessage={(event) => {
+              if (blockedHost.current) return;
+              const address = currentAddress.current;
+              const metadata = readBrowserMetadata(
+                event.nativeEvent.data,
+                address
+              );
+              if (metadata)
+                onNavigate(address, metadata.title, metadata.favicon);
+              else receivePlaybackMessage(event);
+            }}
             onError={() => {
               if (blockedHost.current) return;
               resetYouTubeSession();

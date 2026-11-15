@@ -968,12 +968,12 @@ export function getSettingsGroups(): SettingSection[] {
             },
             {
               id: "default-notebook",
-              name: strings.clearDefaultNotebook(),
-              description: strings.clearDefaultNotebookDesc(),
+              name: strings.clearDefaultFolder(),
+              description: strings.clearDefaultFolderDesc(),
               modifer: () => {
                 db.settings.setDefaultNotebook(undefined);
                 ToastManager.show({
-                  heading: strings.defaultNotebookCleared(),
+                  heading: strings.defaultFolderCleared(),
                   type: "success"
                 });
               },

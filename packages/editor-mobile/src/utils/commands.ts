@@ -162,8 +162,9 @@ globalThis.commands = {
     );
   },
 
-  keyboardShown: (keyboardShown: boolean) => {
+  keyboardShown: (keyboardShown: boolean, showDone = false) => {
     globalThis["keyboardShown"] = keyboardShown;
+    document.documentElement.classList.toggle("ios-editor-keyboard", showDone);
   },
 
   getTableOfContents: (tabId: string) => {

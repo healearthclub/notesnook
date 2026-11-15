@@ -488,7 +488,7 @@ function MostActiveNotebooksSlide({
         >
           {formatNumber(totalNotebooks)}
         </Paragraph>{" "}
-        {strings.notebooksYourFavorites(totalNotebooks)}
+        {strings.foldersYourFavorites(totalNotebooks)}
       </Paragraph>
       <View style={{ gap: DefaultAppStyles.GAP_VERTICAL, width: "100%" }}>
         {notebooks.map((notebook, index) => (

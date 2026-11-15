@@ -17,23 +17,37 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { useThemeColors } from "@notesnook/theme";
-import React from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import React, { useState } from "react";
+import {
+  Image,
+  KeyboardAvoidingView,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View
+} from "react-native";
 import AppIcon from "../../components/ui/AppIcon";
 
-export type BrowserTab = { id: number; address: string; title?: string };
+import { faviconForAddress } from "./browser-metadata";
 
-function shortAddress(address: string) {
-  return address.replace(/^https?:\/\/(?:www\.)?/i, "").replace(/\/$/, "");
-}
+export type BrowserTab = {
+  id: number;
+  address: string;
+  title?: string;
+  favicon?: string;
+};
 
-export function tabLabel(tab: BrowserTab) {
-  return tab.title || shortAddress(tab.address) || "New tab";
+function tabLabel(tab: BrowserTab) {
+  return tab.title || (tab.address ? "Untitled page" : "New tab");
 }
 
 type BrowserHomeProps = {
   tabs: BrowserTab[];
   selectedId: number;
+  keyboardAvoidanceEnabled: boolean;
+  onSubmitAddress: (input: string) => void;
   onNew: () => void;
   onOpen: (id: number) => void;
   onClose: (id: number) => void;
@@ -42,16 +56,24 @@ type BrowserHomeProps = {
 export function BrowserHome({
   tabs,
   selectedId,
+  keyboardAvoidanceEnabled,
+  onSubmitAddress,
   onNew,
   onOpen,
   onClose
 }: BrowserHomeProps) {
   const { colors } = useThemeColors();
+  const [input, setInput] = useState("");
   const pages = tabs.filter((tab) => tab.address || tabs.length > 1);
   const current = pages.find((tab) => tab.id === selectedId && tab.address);
 
   return (
-    <View style={styles.home} testID="browser-home">
+    <KeyboardAvoidingView
+      behavior="padding"
+      enabled={keyboardAvoidanceEnabled}
+      style={styles.home}
+      testID="browser-home"
+    >
       <View style={styles.header}>
         <Text
           accessibilityRole="header"
@@ -59,19 +81,6 @@ export function BrowserHome({
         >
           Browser
         </Text>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="New browser tab"
-          testID="browser-add-tab"
-          style={[
-            styles.control,
-            styles.add,
-            { backgroundColor: colors.secondary.background }
-          ]}
-          onPress={onNew}
-        >
-          <AppIcon name="plus" color={colors.primary.accent} size={24} />
-        </Pressable>
       </View>
       {pages.length ? (
         <ScrollView
@@ -122,7 +131,48 @@ export function BrowserHome({
           onPress={() => onOpen(current.id)}
         />
       ) : null}
-    </View>
+      <View style={styles.addressRow}>
+        <View
+          style={[
+            styles.addressBar,
+            { backgroundColor: colors.secondary.background }
+          ]}
+        >
+          <AppIcon name="magnify" color={colors.primary.paragraph} size={21} />
+          <TextInput
+            accessibilityLabel="Search or enter a website"
+            testID="browser-home-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="web-search"
+            placeholder="Search or address"
+            placeholderTextColor={colors.primary.paragraph}
+            returnKeyType="go"
+            value={input}
+            onChangeText={setInput}
+            onSubmitEditing={({ nativeEvent }) => {
+              if (!nativeEvent.text.trim()) return;
+              onSubmitAddress(nativeEvent.text);
+              setInput("");
+            }}
+            style={[styles.addressInput, { color: colors.primary.heading }]}
+          />
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="New browser tab"
+          testID="browser-add-tab"
+          style={[
+            styles.control,
+            styles.add,
+            { backgroundColor: colors.primary.shade }
+          ]}
+          onPress={onNew}
+        >
+          <AppIcon name="plus" color={colors.primary.accent} size={24} />
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -156,35 +206,66 @@ export function BrowserTabCard({
   );
 }
 
+function SiteFavicon({
+  preferred,
+  fallback,
+  color
+}: {
+  preferred?: string;
+  fallback?: string;
+  color: string;
+}) {
+  const [failed, setFailed] = useState<string[]>([]);
+  const [loaded, setLoaded] = useState<string>();
+  const uri = preferred && failed.includes(preferred) ? fallback : preferred;
+  const showImage = !!uri && !failed.includes(uri);
+  return (
+    <>
+      {(!showImage || loaded !== uri) && (
+        <AppIcon name="compass-outline" size={22} color={color} />
+      )}
+      {showImage && (
+        <Image
+          source={{ uri }}
+          testID={loaded === uri ? "browser-site-favicon" : undefined}
+          onLoad={() => setLoaded(uri)}
+          onError={() => setFailed((previous) => [...previous, uri])}
+          style={styles.favicon}
+          resizeMode="contain"
+          accessible={false}
+        />
+      )}
+    </>
+  );
+}
+
 function TabSummary({ tab, selected }: { tab: BrowserTab; selected: boolean }) {
   const { colors } = useThemeColors();
+  const fallback = faviconForAddress(tab.address);
+  const preferred =
+    faviconForAddress(
+      tab.address,
+      typeof tab.favicon === "string" ? tab.favicon : undefined
+    ) ?? fallback;
   return (
     <>
       <View style={[styles.icon, { backgroundColor: colors.primary.hover }]}>
-        <AppIcon
-          name="compass-outline"
-          size={22}
+        <SiteFavicon
+          key={preferred}
+          preferred={preferred}
+          fallback={fallback}
           color={selected ? colors.primary.accent : colors.primary.paragraph}
         />
       </View>
-      <View style={styles.summary}>
-        <Text
-          numberOfLines={1}
-          style={[
-            styles.title,
-            {
-              color: selected ? colors.primary.accent : colors.primary.heading
-            }
-          ]}
-        >
-          {tabLabel(tab)}
-        </Text>
-        {tab.title && tab.address ? (
-          <Text numberOfLines={1} style={{ color: colors.primary.paragraph }}>
-            {shortAddress(tab.address)}
-          </Text>
-        ) : null}
-      </View>
+      <Text
+        numberOfLines={1}
+        style={[
+          styles.title,
+          { color: selected ? colors.primary.accent : colors.primary.heading }
+        ]}
+      >
+        {tabLabel(tab)}
+      </Text>
     </>
   );
 }
@@ -192,9 +273,6 @@ function TabSummary({ tab, selected }: { tab: BrowserTab; selected: boolean }) {
 const styles = StyleSheet.create({
   home: { flex: 1 },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
     paddingHorizontal: 16,
     paddingVertical: 10
   },
@@ -226,9 +304,29 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
-  summary: { flex: 1, gap: 2 },
-  title: { fontSize: 15, fontWeight: "600" },
+  favicon: { position: "absolute", width: 24, height: 24, borderRadius: 4 },
+  title: { flex: 1, fontSize: 15, fontWeight: "600" },
   empty: { flex: 1, alignItems: "center", justifyContent: "center" },
+  addressRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 12,
+    marginVertical: 6
+  },
+  addressBar: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    paddingHorizontal: 14,
+    borderRadius: 22
+  },
+  addressInput: {
+    flex: 1,
+    minHeight: 44,
+    paddingLeft: 8,
+    fontSize: 16
+  },
   card: {
     minHeight: 52,
     flexDirection: "row",

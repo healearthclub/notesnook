@@ -161,14 +161,14 @@ export const MoveNotebook = (props: NavigationProps<"MoveNotebook">) => {
             if (item.disabled) {
               ToastManager.show({
                 type: "info",
-                message: strings.cannotMoveNotebooksHere()
+                message: strings.cannotMoveFoldersHere()
               });
               return;
             }
             const selectedNotebook = item.notebook;
             presentDialog({
-              title: strings.moveNotebooks(selectedNotebooks.length),
-              paragraph: strings.moveNotebooksConfirm(
+              title: strings.moveFolders(selectedNotebooks.length),
+              paragraph: strings.moveFoldersConfirm(
                 selectedNotebooks.length,
                 selectedNotebook.title
               ),
@@ -229,7 +229,7 @@ export const MoveNotebook = (props: NavigationProps<"MoveNotebook">) => {
       }}
     >
       <Header
-        title={strings.moveNotebook(
+        title={strings.moveFolder(
           selectedNotebooks.length,
           selectedNotebooks[0].title
         )}
@@ -248,7 +248,7 @@ export const MoveNotebook = (props: NavigationProps<"MoveNotebook">) => {
             }}
           >
             <Input
-              placeholder={strings.searchNotebooks()}
+              placeholder={strings.searchFolders()}
               onChangeText={(value) => {
                 lastQuery.current = value;
                 searchTimer.current = setTimeout(() => {
@@ -343,7 +343,7 @@ export const MoveNotebook = (props: NavigationProps<"MoveNotebook">) => {
                 textAlign: "center"
               }}
             >
-              {strings.emptyPlaceholders("notebook")}
+              {strings.noFolders()}
             </Text>
           </View>
         }

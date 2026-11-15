@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>0hi · UI prototype</title>
+  <link rel="stylesheet" href="prototype.css">
+  <script src="prototype.js" defer></script>
+</head>
+<body>
+  <header class="top"><h1>0hi <span>UI prototype</span></h1><a href="../../../output/notesnook-ios/ui-review/index.html?view=notesnook">iOS screenshots ↗</a></header>
+  <main>
+    <aside class="screens" aria-label="Preview screens">
+      <h2>Screens</h2>
+      <nav id="screens"></nav>
+    </aside>
+    <section class="preview" aria-label="Interactive iPhone preview">
+      <div class="phone">
+        <div class="status" aria-hidden="true"><span>9:41</span><i></i><span>▴ ◕ ▰</span></div>
+        <div id="screen" class="screen"></div>
+        <div class="home-indicator" aria-hidden="true"></div>
+      </div>
+    </section>
+    <aside class="design" aria-label="Design controls">
+      <h2>Design changes</h2>
+      <p>Edit the preview, then export a snapshot for the implementation brief.</p>
+      <form id="settings"></form>
+      <label for="intent">Interaction changes or acceptance notes</label>
+      <textarea id="intent" rows="3" placeholder="Describe any behavior you want changed"></textarea>
+      <div class="actions">
+        <button id="export" class="primary" type="button">Export design snapshot</button>
+        <button id="reset" type="button">Reset draft</button>
+      </div>
+      <p id="feedback" class="feedback" role="status"></p>
+    </aside>
+  </main>
+</body>
+</html>

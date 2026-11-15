@@ -133,6 +133,7 @@ const Editor = React.memo(
         noToolbar = false,
         noHeader = false,
         withController = true,
+        keyboardToolbar = false,
         editorId = "",
         onLoad,
         onChange
@@ -143,7 +144,8 @@ const Editor = React.memo(
       const onMessage = useEditorEvents(editor, {
         readonly,
         noToolbar,
-        noHeader
+        noHeader,
+        keyboardToolbar: keyboardToolbar && !readonly
       });
       const [renderKey, setRenderKey] = useState(
         randId("editor-id") + editorId

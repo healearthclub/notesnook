@@ -214,7 +214,7 @@ export const SelectionHeader = React.memo(
                   icon: "export"
                 },
                 {
-                  title: strings.addToNotebook(),
+                  title: strings.addToFolder(),
                   onPress: async () => {
                     Navigation.navigate("LinkNotebooks", {
                       noteIds: selectedItemsList
@@ -224,7 +224,7 @@ export const SelectionHeader = React.memo(
                   icon: "plus"
                 },
                 {
-                  title: strings.unlinkNotebook(),
+                  title: strings.unlinkFolder(),
                   onPress: async () => {
                     if (!id) return;
                     await db.notes.removeFromNotebook(

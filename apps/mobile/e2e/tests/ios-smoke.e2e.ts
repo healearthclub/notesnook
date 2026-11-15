@@ -189,15 +189,15 @@ describe("iOS local notes", () => {
       const home = element(by.id("browser-home"));
       const resume = element(by.id("browser-resume-tab"));
       const homeResume = element(by.id("browser-home-resume-tab"));
-      const addTab = element(by.id("browser-add-tab"));
+      const homeAddress = element(by.id("browser-home-address"));
       const pageAddTab = element(by.id("browser-page-add-tab"));
       const minimize = element(by.id("browser-minimize-tab"));
       await tapUntilVisible(browserTab, home);
       await device.takeScreenshot("ios-browser-empty");
-      await tapUntilVisible(addTab, address);
-      await address.tap();
-      await address.typeText(`http://localhost:${port}/`);
-      await address.tapReturnKey();
+      await homeAddress.tap();
+      await homeAddress.typeText(`http://localhost:${port}/`);
+      await homeAddress.tapReturnKey();
+      await waitFor(address).toBeVisible().withTimeout(10000);
 
       const heading = web(by.id("browser-webview")).element(by.web.id("title"));
       await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
@@ -286,8 +286,8 @@ describe("iOS local notes", () => {
         expect(heading).toHaveText("Page dialogs were dismissed")
       );
 
-      await device.takeScreenshot("ios-browser-close-page");
-      await tapUntilVisible(element(by.id("browser-page-close-tab")), home);
+      await tapUntilVisible(minimize, home);
+      await element(by.id("browser-close-tab-4")).tap();
       await waitFor(element(by.id("browser-home-tab-4")))
         .not.toExist()
         .withTimeout(10000);

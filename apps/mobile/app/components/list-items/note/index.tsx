@@ -308,9 +308,9 @@ const NoteItem = ({
                       }}
                     >
                       <AppIcon
-                        name="book-outline"
+                        name="folder-outline"
                         size={AppFontSize.xxxs}
-                        color={colors.secondary.icon}
+                        color={colors.primary.accent}
                       />
                       <Paragraph
                         size={AppFontSize.xxxs}

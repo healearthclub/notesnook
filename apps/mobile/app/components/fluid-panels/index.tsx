@@ -95,10 +95,6 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
   );
   const previousTab = useSharedValue(1);
   const isDrawerOpen = useSharedValue(false);
-  const gestureStartValue = useSharedValue({
-    x: 0,
-    y: 0
-  });
   const locked = useSharedValue(false);
   const forcedLock = useSharedValue(false);
   const [disabled, setDisabled] = useState(false);
@@ -295,12 +291,15 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
     .enabled(enabled && !disabled)
     .activeOffsetX([-5, 5])
     .failOffsetY([-10, 10])
-    .onBegin((event) => {
+    .onTouchesDown((event, state) => {
+      const touch = event.changedTouches[0];
+      // The editor owns horizontal gestures outside the iOS back-swipe edge.
+      if (isIPhone && currentTab.value === 2 && touch && touch.absoluteX > 25) {
+        state.fail();
+      }
+    })
+    .onBegin(() => {
       locked.value = false;
-      gestureStartValue.value = {
-        x: event.absoluteX,
-        y: event.absoluteY
-      };
     })
     .onStart((event) => {
       let vx = event.velocityX;
@@ -320,9 +319,6 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
       if (
         value < 0 ||
         (currentTab.value === 2 && Platform.OS === "android") ||
-        (currentTab.value === 2 &&
-          gestureStartValue.value.x > 25 &&
-          Platform.OS === "ios") ||
         (value >= homePosition && isSmallTab) ||
         value > editorPosition
       )

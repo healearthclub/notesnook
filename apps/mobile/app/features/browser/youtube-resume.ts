@@ -23,25 +23,30 @@ const storageKey = "nn::youtubeResume";
 
 export type YouTubeResume = YouTubePlayback & { videoId: string };
 
-export function readYouTubeResume() {
-  const saved = MMKV.getMap<YouTubeResume>(storageKey);
+export function parseYouTubeResume(value: unknown) {
+  if (!value || typeof value !== "object") return;
+  const saved = value as YouTubeResume;
   if (
-    !saved ||
     typeof saved.videoId !== "string" ||
     !/^[A-Za-z0-9_-]{11}$/.test(saved.videoId) ||
     typeof saved.title !== "string" ||
     !Number.isSafeInteger(saved.position) ||
     saved.position < 0 ||
-    !Number.isFinite(saved.progress)
+    !Number.isFinite(saved.progress) ||
+    saved.progress < 0 ||
+    saved.progress > 1
   )
     return undefined;
 
   return { ...saved, playing: false };
 }
 
-export function saveYouTubeResume(saved?: YouTubeResume) {
-  if (saved) MMKV.setMap(storageKey, saved);
-  else MMKV.removeItem(storageKey);
+export function readYouTubeResume() {
+  return parseYouTubeResume(MMKV.getMap<YouTubeResume>(storageKey));
+}
+
+export function clearYouTubeResume() {
+  MMKV.removeItem(storageKey);
 }
 
 export function resumeYouTubeAddress({ videoId, position }: YouTubeResume) {

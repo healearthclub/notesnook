@@ -215,7 +215,7 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
       }}
     >
       <Header
-        title={strings.addToNotebook()}
+        title={strings.addToFolder()}
         canGoBack
         rightButton={
           hasSelection
@@ -244,7 +244,7 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
             }}
           >
             <Input
-              placeholder={strings.searchNotebooks()}
+              placeholder={strings.searchFolders()}
               onChangeText={(value) => {
                 searchQuery.current = value;
                 searchTimer.current = setTimeout(() => {
@@ -312,7 +312,7 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
                 color={colors.primary.icon}
                 style={{ textAlign: "center" }}
               >
-                {strings.emptyPlaceholders("notebook")}
+                {strings.noFolders()}
               </Paragraph>
             )}
           </View>
