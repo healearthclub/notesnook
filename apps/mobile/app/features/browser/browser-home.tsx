@@ -17,19 +17,26 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { useThemeColors } from "@notesnook/theme";
-import React, { useState } from "react";
+import React, { createContext, useContext, useState } from "react";
 import {
   Image,
   KeyboardAvoidingView,
+  LayoutRectangle,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View
 } from "react-native";
+import { FolderRow } from "../../components/ui/folder-row";
 import AppIcon from "../../components/ui/AppIcon";
 
+import {
+  compactDockCardStyle,
+  DismissibleCard,
+  dismissCardAction,
+  dockCardStyle
+} from "./dismissible-card";
 import { faviconForAddress } from "./browser-metadata";
 
 export type BrowserTab = {
@@ -47,24 +54,28 @@ type BrowserHomeProps = {
   tabs: BrowserTab[];
   selectedId: number;
   keyboardAvoidanceEnabled: boolean;
+  cardDismissed: boolean;
+  onDismissCard: () => void;
+  onVideoLayout?: (layout: LayoutRectangle) => void;
   onSubmitAddress: (input: string) => void;
   onNew: () => void;
   onOpen: (id: number) => void;
-  onClose: (id: number) => void;
 };
 
 export function BrowserHome({
   tabs,
   selectedId,
   keyboardAvoidanceEnabled,
+  cardDismissed,
+  onDismissCard,
+  onVideoLayout,
   onSubmitAddress,
   onNew,
-  onOpen,
-  onClose
+  onOpen
 }: BrowserHomeProps) {
   const { colors } = useThemeColors();
   const [input, setInput] = useState("");
-  const pages = tabs.filter((tab) => tab.address || tabs.length > 1);
+  const pages = recentBrowserTabs(tabs);
   const current = pages.find((tab) => tab.id === selectedId && tab.address);
 
   return (
@@ -82,54 +93,28 @@ export function BrowserHome({
           Browser
         </Text>
       </View>
-      {pages.length ? (
-        <ScrollView
-          style={styles.home}
-          contentContainerStyle={styles.list}
-          keyboardShouldPersistTaps="handled"
-        >
-          {pages.map((tab) => (
-            <View
-              key={tab.id}
-              style={[styles.row, { borderBottomColor: colors.primary.border }]}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={tabLabel(tab)}
-                accessibilityState={{ selected: tab.id === selectedId }}
-                testID={`browser-home-tab-${tab.id}`}
-                onPress={() => onOpen(tab.id)}
-                style={styles.rowButton}
-              >
-                <TabSummary tab={tab} selected={tab.id === selectedId} />
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={`Close ${tabLabel(tab)}`}
-                testID={`browser-close-tab-${tab.id}`}
-                onPress={() => onClose(tab.id)}
-                style={styles.control}
-              >
-                <AppIcon
-                  name="close"
-                  color={colors.primary.paragraph}
-                  size={19}
-                />
-              </Pressable>
-            </View>
-          ))}
-        </ScrollView>
-      ) : (
-        <View style={styles.empty}>
+      <View style={styles.empty}>
+        {!pages.length && (
           <Text style={{ color: colors.primary.paragraph }}>No open pages</Text>
-        </View>
-      )}
-      {current ? (
-        <BrowserTabCard
-          tab={current}
-          testID="browser-home-resume-tab"
-          onPress={() => onOpen(current.id)}
-        />
+        )}
+      </View>
+      {current && !cardDismissed ? (
+        <>
+          {onVideoLayout && (
+            <View
+              style={styles.videoSlot}
+              onLayout={({ nativeEvent }) => onVideoLayout(nativeEvent.layout)}
+            />
+          )}
+          <BrowserTabCard
+            key={current.id}
+            onDismiss={onDismissCard}
+            tab={current}
+            video={!!onVideoLayout}
+            testID="browser-home-resume-tab"
+            onPress={() => onOpen(current.id)}
+          />
+        </>
       ) : null}
       <View style={styles.addressRow}>
         <View
@@ -176,33 +161,120 @@ export function BrowserHome({
   );
 }
 
+type RecentBrowserTabs = {
+  tabs: BrowserTab[];
+  selectedId: number;
+  onOpen: (id: number) => void;
+  onClose: (id: number) => void;
+};
+
+export const RecentBrowserTabsContext = createContext<RecentBrowserTabs | null>(
+  null
+);
+
+export function recentBrowserTabs(tabs: BrowserTab[]) {
+  return tabs.filter((tab) => tab.address || tabs.length > 1);
+}
+
+export function BrowserRecentFolder() {
+  const session = useContext(RecentBrowserTabsContext);
+  const { colors } = useThemeColors();
+  const [recentExpanded, setRecentExpanded] = useState(false);
+  if (!session) return null;
+  const { tabs, selectedId, onOpen, onClose } = session;
+  const pages = recentBrowserTabs(tabs);
+  if (!pages.length) return null;
+
+  return (
+    <View>
+      <FolderRow
+        title="Recent"
+        count={pages.length}
+        accessibilityLabel="Recent browser tabs"
+        expanded={recentExpanded}
+        testID="browser-recent-folder"
+        onPress={() => setRecentExpanded((expanded) => !expanded)}
+      />
+      {recentExpanded &&
+        pages.map((tab) => (
+          <View
+            key={tab.id}
+            style={[
+              styles.row,
+              styles.recentTab,
+              { borderBottomColor: colors.primary.border }
+            ]}
+          >
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={tabLabel(tab)}
+              accessibilityState={{ selected: tab.id === selectedId }}
+              testID={`browser-home-tab-${tab.id}`}
+              onPress={() => onOpen(tab.id)}
+              style={styles.rowButton}
+            >
+              <TabSummary tab={tab} selected={tab.id === selectedId} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={`Close ${tabLabel(tab)}`}
+              testID={`browser-close-tab-${tab.id}`}
+              onPress={() => onClose(tab.id)}
+              style={styles.control}
+            >
+              <AppIcon
+                name="close"
+                color={colors.primary.paragraph}
+                size={19}
+              />
+            </Pressable>
+          </View>
+        ))}
+    </View>
+  );
+}
+
 export function BrowserTabCard({
   tab,
+  video,
+  compact,
   testID = "browser-resume-tab",
-  onPress
+  onPress,
+  onDismiss
 }: {
   tab: BrowserTab;
+  video?: boolean;
+  compact?: boolean;
   testID?: string;
   onPress: () => void;
+  onDismiss: () => void;
 }) {
   const { colors } = useThemeColors();
   return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`Resume browser tab, ${tabLabel(tab)}`}
-      testID={testID}
-      onPress={onPress}
-      style={[
-        styles.card,
-        {
-          backgroundColor: colors.secondary.background,
-          borderColor: colors.primary.border
-        }
-      ]}
-    >
-      <TabSummary tab={tab} selected />
-      <AppIcon name="chevron-up" color={colors.primary.paragraph} size={24} />
-    </Pressable>
+    <DismissibleCard onDismiss={onDismiss}>
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={`Resume browser tab, ${tabLabel(tab)}`}
+        accessibilityActions={dismissCardAction}
+        onAccessibilityAction={({ nativeEvent }) => {
+          if (nativeEvent.actionName === "dismiss") onDismiss();
+        }}
+        testID={testID}
+        onPress={onPress}
+        style={[
+          dockCardStyle,
+          compact && compactDockCardStyle,
+          video && styles.videoCardTitle,
+          {
+            backgroundColor: colors.secondary.background,
+            borderColor: colors.primary.border
+          }
+        ]}
+      >
+        <TabSummary tab={tab} selected />
+        <AppIcon name="chevron-up" color={colors.primary.paragraph} size={24} />
+      </Pressable>
+    </DismissibleCard>
   );
 }
 
@@ -284,8 +356,9 @@ const styles = StyleSheet.create({
     justifyContent: "center"
   },
   add: { borderRadius: 16 },
-  list: { paddingHorizontal: 16 },
+  recentTab: { marginHorizontal: 16 },
   row: {
+    marginLeft: 10,
     flexDirection: "row",
     alignItems: "center",
     borderBottomWidth: StyleSheet.hairlineWidth
@@ -327,16 +400,17 @@ const styles = StyleSheet.create({
     paddingLeft: 8,
     fontSize: 16
   },
-  card: {
-    minHeight: 52,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
+  videoSlot: {
     marginHorizontal: 12,
-    marginBottom: 6,
-    paddingHorizontal: 8,
-    paddingVertical: 6,
-    borderRadius: 13,
-    borderWidth: StyleSheet.hairlineWidth
+    aspectRatio: 16 / 9,
+    maxHeight: 224,
+    borderTopLeftRadius: 13,
+    borderTopRightRadius: 13,
+    backgroundColor: "black"
+  },
+  videoCardTitle: {
+    borderTopLeftRadius: 0,
+    borderTopRightRadius: 0,
+    borderTopWidth: 0
   }
 });

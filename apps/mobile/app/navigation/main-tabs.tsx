@@ -17,27 +17,50 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 import { useThemeColors } from "@notesnook/theme";
-import React, { PropsWithChildren, useEffect, useRef, useState } from "react";
+import React, {
+  PropsWithChildren,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState
+} from "react";
 import { Keyboard, Platform, ScrollView, StyleSheet, View } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { BottomTabBar } from "../DesignSystem/UIComponents/BottomTabBar";
 import {
   BrowserControls,
   BrowserScreen,
-  readBrowserMediaCards
+  readBrowserMediaCards,
+  readBrowserSession
 } from "../features/browser";
-import { BrowserTab, BrowserTabCard } from "../features/browser/browser-home";
+import {
+  BrowserTab,
+  BrowserTabCard,
+  RecentBrowserTabsContext
+} from "../features/browser/browser-home";
+import { CameraScreen } from "../features/camera";
+import { PhotoLibrarySheet } from "../features/camera/photo-library-sheet";
 import { YouTubeMiniPlayer } from "../features/browser/youtube-mini-player";
 import {
   GoogleScreen,
   googleScreenBackground
 } from "../features/login/google-screen";
+import { useOhaiAccount } from "../features/login/google-session";
+import { MusicDock } from "../features/notes/music-dock";
+import {
+  listenForMusicPlayback,
+  useMusicPlayback
+} from "../features/notes/music-player";
 import { NotesScreen } from "../features/notes";
 import { NotesToolbarAccessory } from "../features/notes/list-layout";
+import { usesNotesTabLayout } from "../features/notes/list-route";
 import useGlobalSafeAreaInsets, {
   BottomInsetOverride
 } from "../hooks/use-global-safe-area-insets";
 import { eSubscribeEvent, eUnSubscribeEvent } from "../services/event-manager";
 import type { NavigationProps } from "../services/navigation";
+import useNavigationStore from "../stores/use-navigation-store";
 import { useSettingStore } from "../stores/use-setting-store";
 import { eOnEnterEditor, eOnExitEditor, eOnLoadNote } from "../utils/events";
 
@@ -45,14 +68,19 @@ const tabs = [
   {
     id: "notes",
     label: "Notes",
-    icon: "note-text-outline",
-    selectedIcon: "note-text"
+    icon: "heal-earth-home"
   },
   {
     id: "browser",
     label: "Browser",
     icon: "compass-outline",
     selectedIcon: "compass"
+  },
+  {
+    id: "camera",
+    label: "Camera",
+    icon: "camera-outline",
+    selectedIcon: "camera"
   },
   {
     id: "profile",
@@ -63,6 +91,8 @@ const tabs = [
 ] as const;
 
 type Tab = (typeof tabs)[number]["id"];
+
+const CAMERA_ROLL_SWIPE_FRACTION = 0.2;
 
 export default function MainScreen(props: NavigationProps<"FluidPanelsView">) {
   return Platform.OS === "ios" ? (
@@ -78,18 +108,52 @@ function MainTabs({ children }: PropsWithChildren) {
   const { colors } = useThemeColors();
   const insets = useGlobalSafeAreaInsets();
   const fullscreen = useSettingStore((state) => state.fullscreen);
+  const notesRoute = useNavigationStore((state) => state.currentRoute);
+  const [libraryOpen, setLibraryOpen] = useState(false);
+  const [tabScreenHeight, setTabScreenHeight] = useState(0);
+  const capturingPhoto = useRef(false);
   const [activeTab, setActiveTab] = useState<Tab>("notes");
   const [browserOpened, setBrowserOpened] = useState(false);
   const [notesEditorVisible, setNotesEditorVisible] = useState(false);
   const browserControls = useRef<BrowserControls>(null);
   const [browserPreview, setBrowserPreview] = useState<BrowserTab | null>(null);
-  const [mediaTabToOpen, setMediaTabToOpen] = useState<number>();
+  const [browserSession, setBrowserSession] = useState(readBrowserSession);
+  const [pendingBrowserAction, setPendingBrowserAction] = useState<{
+    kind: "openTab" | "closeTab" | "dismissCard";
+    id: number;
+  }>();
   const [browserMedia, setBrowserMedia] = useState(readBrowserMediaCards);
+  const hasMusicCard = useMusicPlayback((state) => !!state.current);
   const [profileOpened, setProfileOpened] = useState(false);
+  const ohaiEmail = useOhaiAccount((state) => state.email);
   const notesActive = activeTab === "notes";
   const browserActive = activeTab === "browser";
   const profileActive = activeTab === "profile";
+  const cameraActive = activeTab === "camera";
   const showTabBar = !notesActive || !fullscreen;
+
+  useEffect(listenForMusicPlayback, []);
+
+  const openLibrary = useCallback(() => {
+    if (capturingPhoto.current) return;
+    Keyboard.dismiss();
+    setLibraryOpen(true);
+  }, []);
+  const closeLibrary = useCallback(() => setLibraryOpen(false), []);
+  const swipeForLibrary = useMemo(
+    () =>
+      Gesture.Pan()
+        .enabled(showTabBar && !libraryOpen && tabScreenHeight > 0)
+        .hitSlop({ top: -tabScreenHeight * (1 - CAMERA_ROLL_SWIPE_FRACTION) })
+        .activeOffsetY(-4)
+        .failOffsetY(10)
+        .failOffsetX([-15, 15])
+        .runOnJS(true)
+        .onEnd(({ translationY, velocityY }) => {
+          if (translationY + Math.min(0, velocityY) * 0.1 < -42) openLibrary();
+        }),
+    [libraryOpen, openLibrary, showTabBar, tabScreenHeight]
+  );
 
   useEffect(() => {
     const openNotes = (event?: { refresh?: boolean }) => {
@@ -108,15 +172,10 @@ function MainTabs({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    if (
-      browserActive &&
-      mediaTabToOpen !== undefined &&
-      browserControls.current
-    ) {
-      browserControls.current.openMediaTab(mediaTabToOpen);
-      setMediaTabToOpen(undefined);
-    }
-  }, [browserActive, mediaTabToOpen]);
+    if (!pendingBrowserAction || !browserControls.current) return;
+    browserControls.current[pendingBrowserAction.kind](pendingBrowserAction.id);
+    setPendingBrowserAction(undefined);
+  }, [browserOpened, pendingBrowserAction]);
 
   function selectTab(tab: Tab) {
     if (tab === activeTab) return;
@@ -126,122 +185,192 @@ function MainTabs({ children }: PropsWithChildren) {
     setActiveTab(tab);
   }
 
-  function openMediaTab(id: number) {
-    if (browserControls.current) browserControls.current.openMediaTab(id);
-    else setMediaTabToOpen(id);
+  function openBrowserTab(id: number) {
+    if (browserControls.current) browserControls.current.openTab(id);
+    else setPendingBrowserAction({ kind: "openTab", id });
     selectTab("browser");
   }
 
-  const previewCard =
+  function runBrowserAction(kind: "closeTab" | "dismissCard", id: number) {
+    if (browserControls.current) browserControls.current[kind](id);
+    else {
+      setPendingBrowserAction({ kind, id });
+      setBrowserOpened(true);
+    }
+  }
+
+  const dismissedCards = new Set(
+    browserSession.tabs.filter((tab) => tab.cardDismissed).map((tab) => tab.id)
+  );
+  const visibleMedia = browserMedia.filter(
+    ({ tabId }) => !dismissedCards.has(tabId)
+  );
+
+  const stackAboveSearch =
+    notesActive &&
+    showTabBar &&
+    !notesEditorVisible &&
+    (visibleMedia.length > 0 || usesNotesTabLayout(notesRoute));
+  const showBrowserCards =
+    showTabBar && (stackAboveSearch || (!browserActive && !cameraActive));
+  const preview =
+    showBrowserCards &&
     browserPreview &&
-    !browserMedia.some(({ tabId }) => tabId === browserPreview.id) ? (
+    !dismissedCards.has(browserPreview.id) &&
+    !browserMedia.some(({ tabId }) => tabId === browserPreview.id)
+      ? browserPreview
+      : null;
+  const media = showBrowserCards ? visibleMedia : [];
+  const showMusic = showTabBar && hasMusicCard;
+  const compact = media.length + Number(!!preview) + Number(showMusic) > 1;
+
+  const dockCards: React.ReactElement[] = media.map(({ tabId, playback }) => (
+    <YouTubeMiniPlayer
+      key={tabId}
+      compact={compact}
+      playback={playback}
+      onDismiss={() => runBrowserAction("dismissCard", tabId)}
+      onOpen={() => openBrowserTab(tabId)}
+      onToggle={() => {
+        if (!browserControls.current?.toggleYouTube(tabId, !playback.playing)) {
+          openBrowserTab(tabId);
+        }
+      }}
+    />
+  ));
+  if (preview) {
+    dockCards.push(
       <BrowserTabCard
-        tab={browserPreview}
+        key={preview.id}
+        compact={compact}
+        tab={preview}
+        onDismiss={() => runBrowserAction("dismissCard", preview.id)}
         onPress={() => {
           browserControls.current?.openCurrent();
           selectTab("browser");
         }}
       />
-    ) : null;
-
-  const mediaStack =
-    browserMedia.length > 0 ? (
-      <ScrollView
-        testID="browser-media-stack"
-        style={styles.mediaStack}
-        showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled"
-      >
-        {browserMedia.map(({ tabId, playback }) => (
-          <YouTubeMiniPlayer
-            key={tabId}
-            playback={playback}
-            onOpen={() => openMediaTab(tabId)}
-            onToggle={() => {
-              if (
-                !browserControls.current?.toggleYouTube(
-                  tabId,
-                  !playback.playing
-                )
-              ) {
-                openMediaTab(tabId);
-              }
-            }}
-          />
-        ))}
-        {previewCard}
-      </ScrollView>
-    ) : (
-      previewCard
     );
+  }
+  if (showMusic) dockCards.push(<MusicDock key="music" compact={compact} />);
 
-  const stackAboveSearch =
-    notesActive && showTabBar && !notesEditorVisible && browserMedia.length > 0;
-  const toolbarAccessory = stackAboveSearch ? mediaStack : null;
+  const dock = dockCards.length ? (
+    <ScrollView
+      testID="browser-media-stack"
+      style={styles.mediaStack}
+      contentContainerStyle={compact && styles.dockGrid}
+      scrollEnabled={dockCards.length > 2}
+      showsVerticalScrollIndicator={false}
+      keyboardShouldPersistTaps="handled"
+    >
+      {dockCards.map((card) => (
+        <View key={card.key} style={compact && styles.dockCell}>
+          {card}
+        </View>
+      ))}
+    </ScrollView>
+  ) : null;
 
   return (
-    <View style={[styles.fill, { backgroundColor: colors.primary.background }]}>
-      <View style={styles.fill}>
-        <View
-          style={styles.fill}
-          pointerEvents={notesActive ? "auto" : "none"}
-          accessibilityElementsHidden={!notesActive}
-        >
-          <BottomInsetOverride.Provider value={showTabBar ? 0 : undefined}>
-            <NotesToolbarAccessory.Provider value={toolbarAccessory}>
-              {children}
-            </NotesToolbarAccessory.Provider>
-          </BottomInsetOverride.Provider>
+    <GestureDetector gesture={swipeForLibrary}>
+      <View
+        collapsable={false}
+        onLayout={({ nativeEvent }) =>
+          setTabScreenHeight(nativeEvent.layout.height)
+        }
+        style={[styles.fill, { backgroundColor: colors.primary.background }]}
+      >
+        <View style={styles.fill}>
+          <View
+            style={styles.fill}
+            pointerEvents={notesActive ? "auto" : "none"}
+            accessibilityElementsHidden={!notesActive}
+          >
+            <BottomInsetOverride.Provider value={showTabBar ? 0 : undefined}>
+              <NotesToolbarAccessory.Provider value={stackAboveSearch ? dock : null}>
+                <RecentBrowserTabsContext.Provider
+                  value={{
+                    ...browserSession,
+                    onOpen: openBrowserTab,
+                    onClose: (id) => runBrowserAction("closeTab", id)
+                  }}
+                >
+                  {children}
+                </RecentBrowserTabsContext.Provider>
+              </NotesToolbarAccessory.Provider>
+            </BottomInsetOverride.Provider>
+          </View>
+          {browserOpened ? (
+            <View
+              style={[StyleSheet.absoluteFill, !browserActive && styles.hidden]}
+              pointerEvents={browserActive ? "auto" : "none"}
+              accessibilityElementsHidden={!browserActive}
+            >
+              <BrowserScreen
+                ref={browserControls}
+                active={browserActive}
+                onPreviewChange={setBrowserPreview}
+                onMediaChange={setBrowserMedia}
+                onSessionChange={setBrowserSession}
+              />
+            </View>
+          ) : null}
+          {cameraActive && (
+            <View style={StyleSheet.absoluteFill}>
+              <CameraScreen
+                libraryOpen={libraryOpen}
+                onOpenLibrary={openLibrary}
+                capturingRef={capturingPhoto}
+              />
+            </View>
+          )}
+          {profileOpened ? (
+            <View
+              testID="profile-screen"
+              style={[
+                StyleSheet.absoluteFill,
+                {
+                  backgroundColor: ohaiEmail
+                    ? colors.primary.background
+                    : googleScreenBackground,
+                  paddingTop: insets.top,
+                  paddingLeft: insets.left,
+                  paddingRight: insets.right
+                },
+                !profileActive && styles.hidden
+              ]}
+              pointerEvents={profileActive ? "auto" : "none"}
+              accessibilityElementsHidden={!profileActive}
+            >
+              <GoogleScreen active={profileActive} profile />
+            </View>
+          ) : null}
         </View>
-        {browserOpened ? (
-          <View
-            style={[StyleSheet.absoluteFill, !browserActive && styles.hidden]}
-            pointerEvents={browserActive ? "auto" : "none"}
-            accessibilityElementsHidden={!browserActive}
-          >
-            <BrowserScreen
-              ref={browserControls}
-              active={browserActive}
-              onPreviewChange={setBrowserPreview}
-              onMediaChange={setBrowserMedia}
-            />
-          </View>
+        {!stackAboveSearch && dock}
+        {showTabBar ? (
+          <BottomTabBar
+            tabs={tabs}
+            selectedTab={activeTab}
+            onSelectTab={selectTab}
+            bottomInset={insets.bottom}
+          />
         ) : null}
-        {profileOpened ? (
-          <View
-            testID="profile-screen"
-            style={[
-              StyleSheet.absoluteFill,
-              {
-                backgroundColor: googleScreenBackground,
-                paddingTop: insets.top,
-                paddingLeft: insets.left,
-                paddingRight: insets.right
-              },
-              !profileActive && styles.hidden
-            ]}
-            pointerEvents={profileActive ? "auto" : "none"}
-            accessibilityElementsHidden={!profileActive}
-          >
-            <GoogleScreen active={profileActive} />
-          </View>
-        ) : null}
+        <PhotoLibrarySheet visible={libraryOpen} onClose={closeLibrary} />
       </View>
-      {showTabBar && !browserActive && !stackAboveSearch ? mediaStack : null}
-      {showTabBar ? (
-        <BottomTabBar
-          tabs={tabs}
-          selectedTab={activeTab}
-          onSelectTab={selectTab}
-          bottomInset={insets.bottom}
-        />
-      ) : null}
-    </View>
+    </GestureDetector>
   );
 }
 
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   mediaStack: { flexGrow: 0, maxHeight: 174 },
+  dockGrid: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    paddingHorizontal: 8,
+    paddingBottom: 6,
+    rowGap: 6
+  },
+  dockCell: { width: "50%", paddingHorizontal: 4, overflow: "hidden" },
   hidden: { opacity: 0 }
 });

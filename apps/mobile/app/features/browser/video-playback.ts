@@ -16,6 +16,7 @@ export const inlineVideoScript = `
     }
 
     function expandVideo(video) {
+      if (document.documentElement?.hasAttribute("data-ohai-video-card-mode")) return;
       if (video === expanded) return;
       collapseVideo();
       controlsBeforeExpand = video.controls;

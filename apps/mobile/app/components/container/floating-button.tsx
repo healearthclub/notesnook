@@ -42,6 +42,7 @@ interface FloatingButtonProps {
   onPress: () => void;
   accessibilityLabel?: string;
   inline?: boolean;
+  circular?: boolean;
   color?: string;
   shouldShow?: boolean;
   alwaysVisible?: boolean;
@@ -57,6 +58,7 @@ const FloatingButton = ({
   onPress,
   accessibilityLabel,
   inline = false,
+  circular = false,
   color,
   alwaysVisible = false,
   icon,
@@ -139,7 +141,9 @@ const FloatingButton = ({
     inline ? 44 : 0,
     normalize(size === "small" ? 40 : 60) * scale
   );
-  const borderRadius = (size === "small" ? 15 : 20) * scale;
+  const borderRadius = circular
+    ? buttonSize / 2
+    : (size === "small" ? 15 : 20) * scale;
   const button = (
     <TouchableOpacity
       testID={testID || notesnook.buttons.add}

@@ -28,6 +28,7 @@ import {
   Animated,
   Keyboard,
   KeyboardAvoidingView,
+  LayoutRectangle,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -58,7 +59,10 @@ import {
 } from "./youtube-resume";
 
 const storageKey = "nn::browserTabs";
-type SessionTab = BrowserTab & { youtube?: YouTubeResume };
+type SessionTab = BrowserTab & {
+  youtube?: YouTubeResume;
+  cardDismissed?: boolean;
+};
 type TabSession = { tabs: SessionTab[]; selectedId: number };
 
 export type BrowserMediaCard = { tabId: number; playback: YouTubeResume };
@@ -75,9 +79,15 @@ export function readBrowserMediaCards() {
   return browserMediaCards(restoreSession(readYouTubeResume()).tabs);
 }
 
+export function readBrowserSession() {
+  return restoreSession(readYouTubeResume());
+}
+
 export type BrowserControls = {
   openCurrent: () => void;
-  openMediaTab: (tabId: number) => void;
+  openTab: (tabId: number) => void;
+  closeTab: (tabId: number) => void;
+  dismissCard: (tabId: number) => void;
   toggleYouTube: (tabId: number, shouldPlay: boolean) => boolean;
 };
 
@@ -86,6 +96,7 @@ type BrowserScreenProps = {
   active: boolean;
   onPreviewChange: (preview: BrowserTab | null) => void;
   onMediaChange: (media: BrowserMediaCard[]) => void;
+  onSessionChange: (session: TabSession) => void;
 };
 
 function restoreSession(playback?: YouTubeResume): TabSession {
@@ -122,8 +133,8 @@ function restoreSession(playback?: YouTubeResume): TabSession {
               youtube?.videoId === getYouTubeVideoId(tab.address)
                 ? youtube
                 : legacyTab && legacyTab.id === tab.id
-                ? playback
-                : undefined
+                  ? playback
+                  : undefined
           };
         }),
         selectedId: ids.has(saved.selectedId) ? saved.selectedId : tabs[0].id
@@ -164,12 +175,15 @@ export function BrowserScreen({
   ref,
   active,
   onPreviewChange,
-  onMediaChange
+  onMediaChange,
+  onSessionChange
 }: BrowserScreenProps) {
   const { colors } = useThemeColors();
   const insets = useGlobalSafeAreaInsets();
   const { width, height } = useWindowDimensions();
   const [expanded, setExpanded] = useState(false);
+  const [videoTabs, setVideoTabs] = useState<Set<number>>(() => new Set());
+  const [videoLayout, setVideoLayout] = useState<LayoutRectangle>();
   const sheetOffset = useRef(new Animated.Value(height)).current;
   const [savedPlayback] = useState(readYouTubeResume);
   const [{ tabs, selectedId }, setSession] = useState(() =>
@@ -184,21 +198,46 @@ export function BrowserScreen({
         )
       )
   );
-  const [opened, setOpened] = useState(() => new Set([selectedId]));
+  const [opened, setOpened] = useState(
+    () => new Set(active ? [selectedId] : [])
+  );
   const blockedTabAddresses = useRef(new Map<number, string>());
   const players = useRef(new Map<number, BrowserPageControls>());
   const strip = useRef<ScrollView>(null);
   const tabPositions = useRef(new Map<number, number>());
   const selectedIndex = tabs.findIndex((tab) => tab.id === selectedId);
   const selectedTab = tabs[selectedIndex];
+  const showVideoCard =
+    active &&
+    !expanded &&
+    !!selectedTab?.address &&
+    !selectedTab.cardDismissed &&
+    videoTabs.has(selectedId);
+  const videoPreview = showVideoCard ? videoLayout : undefined;
+
+  function updateVideoAvailability(id: number, available: boolean) {
+    setVideoTabs((current) => {
+      if (current.has(id) === available) return current;
+      const next = new Set(current);
+      if (available) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  }
 
   useEffect(() => {
     onPreviewChange(selectedTab?.address ? selectedTab : null);
   }, [onPreviewChange, selectedTab]);
 
   useEffect(() => {
-    if (!active) setExpanded(false);
-  }, [active]);
+    if (active) {
+      setOpened((current) =>
+        current.has(selectedId) ? current : new Set(current).add(selectedId)
+      );
+    } else {
+      setExpanded(false);
+    }
+  }, [active, selectedId]);
 
   useEffect(() => {
     const animation = Animated.timing(sheetOffset, {
@@ -212,7 +251,8 @@ export function BrowserScreen({
 
   useEffect(() => {
     MMKV.setMap(storageKey, { tabs, selectedId });
-  }, [tabs, selectedId]);
+    onSessionChange({ tabs, selectedId });
+  }, [onSessionChange, tabs, selectedId]);
 
   useEffect(() => {
     if (savedPlayback) clearYouTubeResume();
@@ -242,7 +282,21 @@ export function BrowserScreen({
     revealTab(selectedId);
   }, [selectedId]);
 
+  function setCardDismissed(id: number, dismissed: boolean) {
+    setSession((current) => {
+      const tab = current.tabs.find((item) => item.id === id);
+      if (!tab || Boolean(tab.cardDismissed) === dismissed) return current;
+      return {
+        ...current,
+        tabs: current.tabs.map((item) =>
+          item.id === id ? { ...item, cardDismissed: dismissed } : item
+        )
+      };
+    });
+  }
+
   function openTab(id: number) {
+    setCardDismissed(id, false);
     selectTab(id);
     setExpanded(true);
   }
@@ -287,6 +341,7 @@ export function BrowserScreen({
   function closeTab(id: number) {
     if (!tabs.some((tab) => tab.id === id)) return;
     players.current.get(id)?.stop();
+    updateVideoAvailability(id, false);
     setOpened((current) => {
       const remaining = new Set(current);
       remaining.delete(id);
@@ -392,8 +447,12 @@ export function BrowserScreen({
     openCurrent() {
       openTab(selectedId);
     },
-    openMediaTab(tabId) {
+    openTab(tabId) {
       if (tabs.some(({ id }) => id === tabId)) openTab(tabId);
+    },
+    closeTab,
+    dismissCard(tabId) {
+      setCardDismissed(tabId, true);
     },
     toggleYouTube(tabId, shouldPlay) {
       return players.current.get(tabId)?.toggleYouTube(shouldPlay) ?? false;
@@ -459,25 +518,39 @@ export function BrowserScreen({
       >
         <BrowserHome
           keyboardAvoidanceEnabled={active && !expanded}
+          onVideoLayout={showVideoCard ? setVideoLayout : undefined}
           onSubmitAddress={submitHomeAddress}
           tabs={tabs}
           selectedId={selectedId}
+          cardDismissed={!!selectedTab?.cardDismissed}
+          onDismissCard={() => setCardDismissed(selectedId, true)}
           onOpen={openTab}
           onNew={() => {
             if (tabs.length === 1 && !selectedTab?.address) openTab(selectedId);
             else addTab();
           }}
-          onClose={closeTab}
         />
       </View>
       <Animated.View
-        testID="browser-sheet"
-        style={[
-          StyleSheet.absoluteFill,
-          { transform: [{ translateY: sheetOffset }] }
-        ]}
-        pointerEvents={expanded ? "auto" : "none"}
-        accessibilityElementsHidden={!expanded}
+        testID={videoPreview ? "browser-minimized-video" : "browser-sheet"}
+        style={
+          videoPreview
+            ? [
+                styles.videoPreview,
+                {
+                  left: insets.left + videoPreview.x,
+                  top: insets.top + videoPreview.y,
+                  width: videoPreview.width,
+                  height: videoPreview.height
+                }
+              ]
+            : [
+                StyleSheet.absoluteFill,
+                { transform: [{ translateY: sheetOffset }] }
+              ]
+        }
+        pointerEvents={expanded || videoPreview ? "auto" : "none"}
+        accessibilityElementsHidden={!expanded && !videoPreview}
       >
         <KeyboardAvoidingView
           behavior="padding"
@@ -486,9 +559,9 @@ export function BrowserScreen({
             styles.screen,
             {
               backgroundColor: colors.primary.background,
-              paddingTop: insets.top,
-              paddingLeft: insets.left,
-              paddingRight: insets.right
+              paddingTop: videoPreview ? 0 : insets.top,
+              paddingLeft: videoPreview ? 0 : insets.left,
+              paddingRight: videoPreview ? 0 : insets.right
             }
           ]}
         >
@@ -497,7 +570,8 @@ export function BrowserScreen({
               collapsable={false}
               style={[
                 styles.strip,
-                { borderBottomColor: colors.primary.border }
+                { borderBottomColor: colors.primary.border },
+                videoPreview && styles.hideChrome
               ]}
             >
               <Pressable
@@ -598,7 +672,13 @@ export function BrowserScreen({
                       accessibilityElementsHidden={!selected}
                     >
                       <BrowserPage
+                        pageTitle={tab.title}
+                        pageAddress={tab.address}
                         selected={selected && expanded && active}
+                        videoPreview={selected && !!videoPreview}
+                        onVideoAvailabilityChange={(available) =>
+                          updateVideoAvailability(tab.id, available)
+                        }
                         onClose={() => closeOpenPage(tab.id)}
                         onBlocked={() => updateAddress(tab.id, "")}
                         ref={(page) => {
@@ -608,8 +688,8 @@ export function BrowserScreen({
                         initialAddress={
                           resume
                             ? resumeYouTubeAddress(resume)
-                            : blockedTabAddresses.current.get(tab.id) ??
-                              tab.address
+                            : (blockedTabAddresses.current.get(tab.id) ??
+                              tab.address)
                         }
                         initialPlayback={resume}
                         onNavigate={(address, title, favicon) =>
@@ -638,6 +718,14 @@ const styles = StyleSheet.create({
   screen: { flex: 1 },
   viewport: { overflow: "hidden" },
   hidden: { opacity: 0 },
+  hideChrome: { display: "none" },
+  videoPreview: {
+    position: "absolute",
+    backgroundColor: "black",
+    overflow: "hidden",
+    borderTopLeftRadius: 13,
+    borderTopRightRadius: 13
+  },
   strip: {
     flexDirection: "row",
     alignItems: "center",

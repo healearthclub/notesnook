@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		78E64F9C6D52488EB4A283E7 /* AVKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = D1CAFC0A2A0847F38A63A014 /* AVKit.framework */; };
+		F3F9F0E79BAE4E9A8B36CA42 /* OhaiCamera.mm in Sources */ = {isa = PBXBuildFile; fileRef = 1CCB14638D7544328EBCFA24 /* OhaiCamera.mm */; };
+		E7E9EEEAA0304156A86A00A1 /* OhaiMusicPlayer.mm in Sources */ = {isa = PBXBuildFile; fileRef = E7E9EEEAA0304156A86A00A2 /* OhaiMusicPlayer.mm */; };
 		00E356F31AD99517003FC87E /* NotesnookTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 00E356F21AD99517003FC87E /* NotesnookTests.m */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		13B07FC11A68108700A75B9A /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 13B07FB71A68108700A75B9A /* main.m */; };
@@ -93,6 +96,9 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		D1CAFC0A2A0847F38A63A014 /* AVKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVKit.framework; path = System/Library/Frameworks/AVKit.framework; sourceTree = SDKROOT; };
+		1CCB14638D7544328EBCFA24 /* OhaiCamera.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = OhaiCamera.mm; path = Notesnook/OhaiCamera.mm; sourceTree = "<group>"; };
+		E7E9EEEAA0304156A86A00A2 /* OhaiMusicPlayer.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; name = OhaiMusicPlayer.mm; path = Notesnook/OhaiMusicPlayer.mm; sourceTree = "<group>"; };
 		008F07F21AC5B25A0029DE68 /* main.jsbundle */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = main.jsbundle; sourceTree = "<group>"; };
 		00E356EE1AD99517003FC87E /* NotesnookTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NotesnookTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		00E356F11AD99517003FC87E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -170,6 +176,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				6515C42F2580AA3000E83E39 /* StoreKit.framework in Frameworks */,
+				78E64F9C6D52488EB4A283E7 /* AVKit.framework in Frameworks */,
 				543E4A8A0C7887D72387D34C /* libPods-Notesnook.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -229,6 +236,8 @@
 			isa = PBXGroup;
 			children = (
 				6593E4A2281C345400492C50 /* AppDelegate.mm */,
+				1CCB14638D7544328EBCFA24 /* OhaiCamera.mm */,
+				E7E9EEEAA0304156A86A00A2 /* OhaiMusicPlayer.mm */,
 				6529A13D279BC4C70048D4A8 /* BootSplash.storyboard */,
 				659BE46625E11A5100E05671 /* notesnook-text.png */,
 				6529D2B0257B4A2900B49BC3 /* NotesnookDebug.entitlements */,
@@ -249,6 +258,7 @@
 			isa = PBXGroup;
 			children = (
 				6515C42E2580AA2F00E83E39 /* StoreKit.framework */,
+				D1CAFC0A2A0847F38A63A014 /* AVKit.framework */,
 				ED297162215061F000B7C4FE /* JavaScriptCore.framework */,
 				ED2971642150620600B7C4FE /* JavaScriptCore.framework */,
 				41D57E9831C724F59F18FBAE /* libPods-Notesnook-Add to Notes.a */,
@@ -866,6 +876,8 @@
 			files = (
 				65E0340B257B9FF100793428 /* File.swift in Sources */,
 				6593E4A3281C345400492C50 /* AppDelegate.mm in Sources */,
+				F3F9F0E79BAE4E9A8B36CA42 /* OhaiCamera.mm in Sources */,
+				E7E9EEEAA0304156A86A00A1 /* OhaiMusicPlayer.mm in Sources */,
 				13B07FC11A68108700A75B9A /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

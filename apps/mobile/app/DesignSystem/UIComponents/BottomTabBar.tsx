@@ -19,14 +19,16 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { useThemeColors } from "@notesnook/theme";
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
+import Svg, { Path } from "react-native-svg";
 import AppIcon from "../../components/ui/AppIcon";
 
 type TabItem<Id extends string> = {
   id: Id;
   label: string;
-  icon: string;
-  selectedIcon: string;
-};
+} & (
+  | { icon: "heal-earth-home"; selectedIcon?: never }
+  | { icon: string; selectedIcon: string }
+);
 
 type BottomTabBarProps<Id extends string> = {
   tabs: readonly TabItem<Id>[];
@@ -69,6 +71,7 @@ export function BottomTabBar<Id extends string>({
             onPress={() => onSelectTab(id)}
             style={[
               styles.tab,
+              tabs.length > 3 && styles.compactTab,
               {
                 backgroundColor: colors.secondary.background,
                 borderColor: selected ? colors.primary.accent : "transparent"
@@ -77,15 +80,53 @@ export function BottomTabBar<Id extends string>({
               isDark && selected && styles.selectedDarkGlow
             ]}
           >
-            <AppIcon
-              name={selected ? selectedIcon : icon}
-              size={21}
-              color={color}
-            />
+            {icon === "heal-earth-home" ? (
+              <HomeSmileIcon
+                color={color}
+                selected={selected}
+                background={colors.secondary.background}
+              />
+            ) : (
+              <AppIcon
+                name={(selected && selectedIcon) || icon}
+                size={21}
+                color={color}
+              />
+            )}
           </Pressable>
         );
       })}
     </View>
+  );
+}
+
+// The home mark used in Heal Earth Club's navigation.
+function HomeSmileIcon({
+  color,
+  selected,
+  background
+}: {
+  color: string;
+  selected: boolean;
+  background: string;
+}) {
+  return (
+    <Svg width={21} height={21} viewBox="0 0 24 24" accessible={false}>
+      <Path
+        d="M10.1 2.5a2.8 2.8 0 0 1 3.8 0l6.7 6.1A4.4 4.4 0 0 1 22 11.9V19a3 3 0 0 1-3 3H5a3 3 0 0 1-3-3v-7.1a4.4 4.4 0 0 1 1.4-3.3z"
+        fill={selected ? color : "none"}
+        stroke={selected ? "none" : color}
+        strokeWidth={2}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M9 16.1c1.7 1.3 4.3 1.3 6 0"
+        fill="none"
+        stroke={selected ? background : color}
+        strokeWidth={2}
+        strokeLinecap="round"
+      />
+    </Svg>
   );
 }
 
@@ -106,6 +147,7 @@ const styles = StyleSheet.create({
   selectedDarkGlow: {
     shadowOpacity: 0.32
   },
+  compactTab: { flex: 1, minWidth: 44, maxWidth: 72 },
   tab: {
     minWidth: 72,
     minHeight: 48,

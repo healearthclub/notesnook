@@ -20,16 +20,25 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { Notebook } from "@notesnook/core";
 import { strings } from "@notesnook/intl";
 import { useThemeColors } from "@notesnook/theme";
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { TextInput, View } from "react-native";
+import {
+  BrowserRecentFolder,
+  RecentBrowserTabsContext,
+  recentBrowserTabs
+} from "../../features/browser/browser-home";
 import { db } from "../../common/database";
 import NotebookScreen from "../../screens/notebook";
-import { TreeItem } from "../../stores/create-notebook-tree-stores";
+import {
+  createNotebookTreeStores,
+  TreeItem
+} from "../../stores/create-notebook-tree-stores";
 import useNavigationStore from "../../stores/use-navigation-store";
 import { useNotebooks } from "../../stores/use-notebook-store";
 import { AppFontSize } from "../../utils/size";
 import { appBodyFont, DefaultAppStyles } from "../../utils/styles";
 import { Properties } from "../properties";
+import { FOLDER_ROW_HEIGHT } from "../ui/folder-row";
 import { NotebookItem } from "./notebook-item";
 import { SideMenuHeader } from "./side-menu-header";
 import { SideMenuListEmpty } from "./side-menu-list-empty";
@@ -45,26 +54,56 @@ useSideMenuNotebookSelectionStore.setState({
   multiSelect: true
 });
 
-export const SideMenuNotebooks = () => {
-  const tree = useSideMenuNotebookTreeStore((state) => state.tree);
+type FolderPresentation = "sidebar" | "notes";
+
+const sidebarStores = {
+  useNotebookTreeStore: useSideMenuNotebookTreeStore,
+  useNotebookExpandedStore: useSideMenuNotebookExpandedStore,
+  useNotebookSelectionStore: useSideMenuNotebookSelectionStore
+};
+const notesStores = createNotebookTreeStores(
+  false,
+  false,
+  "notes-folder-tree-expanded"
+);
+
+function storesFor(presentation: FolderPresentation) {
+  return presentation === "notes" ? notesStores : sidebarStores;
+}
+
+export const SideMenuNotebooks = ({
+  presentation = "sidebar"
+}: {
+  presentation?: FolderPresentation;
+}) => {
+  const inNotes = presentation === "notes";
+  const browserSession = useContext(RecentBrowserTabsContext);
+  const showBrowserFolder =
+    inNotes &&
+    !!browserSession &&
+    recentBrowserTabs(browserSession.tabs).length > 0;
+  const { useNotebookTreeStore, useNotebookSelectionStore } =
+    storesFor(presentation);
+  const tree = useNotebookTreeStore((state) => state.tree);
   const [notebooks, loading] = useNotebooks();
   const [isLoading, setIsLoading] = useState(true);
   const { colors } = useThemeColors();
   const [filteredNotebooks, setFilteredNotebooks] = React.useState(notebooks);
   const searchTimer = React.useRef<NodeJS.Timeout>(undefined);
   const lastQuery = React.useRef<string>(undefined);
-  const updater = useRelationStore(state => state.updater);
+  const updater = useRelationStore((state) => state.updater);
   const loadRootNotebooks = React.useCallback(async () => {
     if (!filteredNotebooks) return;
     const _notebooks: Notebook[] = [];
     for (let i = 0; i < filteredNotebooks.placeholders.length; i++) {
-      _notebooks[i] = (await filteredNotebooks?.item(i))?.item as Notebook;
+      const notebook = (await filteredNotebooks.item(i))?.item;
+      if (notebook) _notebooks.push(notebook);
     }
-    const items = await useSideMenuNotebookTreeStore
+    const items = await useNotebookTreeStore
       .getState()
       .addNotebooks("root", _notebooks, 0);
-    useSideMenuNotebookTreeStore.getState().setTree(items);
-  }, [filteredNotebooks]);
+    useNotebookTreeStore.getState().setTree(items);
+  }, [filteredNotebooks, useNotebookTreeStore]);
 
   const updateNotebooks = React.useCallback(() => {
     if (lastQuery.current) {
@@ -81,7 +120,7 @@ export const SideMenuNotebooks = () => {
 
   useEffect(() => {
     updateNotebooks();
-  }, [updateNotebooks,updater]);
+  }, [updateNotebooks, updater]);
 
   useEffect(() => {
     (async () => {
@@ -93,25 +132,25 @@ export const SideMenuNotebooks = () => {
   }, [loadRootNotebooks, loading]);
 
   useEffect(() => {
-    useSideMenuNotebookSelectionStore.setState({
+    if (inNotes) return;
+    useNotebookSelectionStore.setState({
       selectAll: async () => {
         const allNotebooks = await db.notebooks.all.items();
         const allSelected = allNotebooks.every((notebook) => {
           return (
-            useSideMenuNotebookSelectionStore.getState().selection[
-              notebook.id
-            ] === "selected"
+            useNotebookSelectionStore.getState().selection[notebook.id] ===
+            "selected"
           );
         });
 
         if (allSelected) {
-          useSideMenuNotebookSelectionStore.setState({
+          useNotebookSelectionStore.setState({
             selection: {}
           });
           return;
         }
 
-        useSideMenuNotebookSelectionStore.setState({
+        useNotebookSelectionStore.setState({
           selection: allNotebooks.reduce((acc: any, item) => {
             acc[item.id] = "selected";
             return acc;
@@ -119,25 +158,31 @@ export const SideMenuNotebooks = () => {
         });
       }
     });
-  }, []);
+  }, [inNotes, useNotebookSelectionStore]);
 
   const renderItem = React.useCallback(
     (info: { item: TreeItem; index: number }) => {
-      return <NotebookItemWrapper index={info.index} item={info.item} />;
+      return (
+        <NotebookItemWrapper
+          index={info.index}
+          item={info.item}
+          presentation={presentation}
+        />
+      );
     },
-    []
+    [presentation]
   );
 
   return (
     <View
-      style={{
-        height: "100%"
-      }}
+      style={inNotes ? { flex: 1 } : { height: "100%" }}
+      testID={inNotes ? "notes-folders-list" : undefined}
     >
-      {!notebooks || notebooks.placeholders.length === 0 ? (
+      {!showBrowserFolder && !notebooks?.placeholders.length ? (
         <SideMenuListEmpty
           placeholder={strings.noFolders()}
           isLoading={isLoading}
+          showHeader={!inNotes}
         />
       ) : (
         <>
@@ -146,48 +191,54 @@ export const SideMenuNotebooks = () => {
             bounces={false}
             bouncesZoom={false}
             overScrollMode="never"
-            estimatedItemSize={30}
+            estimatedItemSize={inNotes ? FOLDER_ROW_HEIGHT : 30}
             ListHeaderComponent={
-              <View
-                style={{
-                  backgroundColor: colors.primary.background,
-                  paddingTop: DefaultAppStyles.GAP_VERTICAL
-                }}
-              >
-                <SideMenuHeader />
-              </View>
+              inNotes ? (
+                <BrowserRecentFolder />
+              ) : (
+                <View
+                  style={{
+                    backgroundColor: colors.primary.background,
+                    paddingTop: DefaultAppStyles.GAP_VERTICAL
+                  }}
+                >
+                  <SideMenuHeader />
+                </View>
+              )
             }
             renderItem={renderItem}
           />
-          <View
-            style={{
-              width: "100%",
-              paddingHorizontal: DefaultAppStyles.GAP,
-              backgroundColor: colors.primary.background,
-              borderTopColor: colors.primary.border,
-              borderTopWidth: 1,
-              paddingVertical: DefaultAppStyles.GAP_VERTICAL
-            }}
-          >
-            <TextInput
-              placeholder={strings.filterFolders()}
+          {!inNotes && (
+            <View
               style={{
-                fontFamily: appBodyFont,
-                fontSize: AppFontSize.xs,
-                paddingTop: 0,
-                paddingBottom: 0
+                width: "100%",
+                paddingHorizontal: DefaultAppStyles.GAP,
+                backgroundColor: colors.primary.background,
+                borderTopColor: colors.primary.border,
+                borderTopWidth: 1,
+                paddingVertical: DefaultAppStyles.GAP_VERTICAL
               }}
-              cursorColor={colors.primary.accent}
-              onChangeText={async (value: string) => {
-                searchTimer.current && clearTimeout(searchTimer.current);
-                searchTimer.current = setTimeout(async () => {
-                  lastQuery.current = value;
-                  updateNotebooks();
-                }, 500);
-              }}
-              placeholderTextColor={colors.primary.placeholder}
-            />
-          </View>
+            >
+              <TextInput
+                placeholder={strings.filterFolders()}
+                style={{
+                  fontFamily: appBodyFont,
+                  fontSize: AppFontSize.xs,
+                  paddingTop: 0,
+                  paddingBottom: 0
+                }}
+                cursorColor={colors.primary.accent}
+                onChangeText={async (value: string) => {
+                  searchTimer.current && clearTimeout(searchTimer.current);
+                  searchTimer.current = setTimeout(async () => {
+                    lastQuery.current = value;
+                    updateNotebooks();
+                  }, 500);
+                }}
+                placeholderTextColor={colors.primary.placeholder}
+              />
+            </View>
+          )}
         </>
       )}
     </View>
@@ -195,18 +246,30 @@ export const SideMenuNotebooks = () => {
 };
 
 const NotebookItemWrapper = React.memo(
-  ({ item, index }: { item: TreeItem; index: number }) => {
+  ({
+    item,
+    index,
+    presentation
+  }: {
+    item: TreeItem;
+    index: number;
+    presentation: FolderPresentation;
+  }) => {
+    const inNotes = presentation === "notes";
+    const {
+      useNotebookTreeStore,
+      useNotebookExpandedStore,
+      useNotebookSelectionStore
+    } = storesFor(presentation);
     const dismissMenu = useSideMenuDismiss();
-    const expanded = useSideMenuNotebookExpandedStore(
+    const expanded = useNotebookExpandedStore(
       (state) => state.expanded[item.notebook.id]
     );
-    const disableExpand = useSideMenuNotebookTreeStore(
-      (state) => state.isSearching
-    );
-    const selectionEnabled = useSideMenuNotebookSelectionStore(
+    const disableExpand = useNotebookTreeStore((state) => state.isSearching);
+    const selectionEnabled = useNotebookSelectionStore(
       (state) => state.enabled
     );
-    const selected = useSideMenuNotebookSelectionStore(
+    const selected = useNotebookSelectionStore(
       (state) => state.selection[item.notebook.id] === "selected"
     );
     const focused = useNavigationStore(
@@ -216,70 +279,73 @@ const NotebookItemWrapper = React.memo(
     const onItemUpdate = React.useCallback(async () => {
       const notebook = await db.notebooks.notebook(item.notebook.id);
       if (notebook) {
-        useSideMenuNotebookTreeStore
-          .getState()
-          .updateItem(item.notebook.id, notebook);
+        useNotebookTreeStore.getState().updateItem(item.notebook.id, notebook);
         if (expanded) {
-          useSideMenuNotebookTreeStore
+          useNotebookTreeStore
             .getState()
             .setTree(
-              await useSideMenuNotebookTreeStore
+              await useNotebookTreeStore
                 .getState()
                 .fetchAndAdd(item.notebook.id, item.depth + 1)
             );
         }
       } else {
-        useSideMenuNotebookTreeStore.getState().removeItem(item.notebook.id);
+        useNotebookTreeStore.getState().removeItem(item.notebook.id);
       }
-    }, [expanded, item.depth, item.notebook.id]);
+    }, [expanded, item.depth, item.notebook.id, useNotebookTreeStore]);
 
     return (
       <View
-        style={{
-          paddingHorizontal: DefaultAppStyles.GAP,
-          marginTop: index === 0 ? DefaultAppStyles.GAP_VERTICAL : 0
-        }}
+        style={
+          inNotes
+            ? undefined
+            : {
+                paddingHorizontal: DefaultAppStyles.GAP,
+                marginTop: index === 0 ? DefaultAppStyles.GAP_VERTICAL : 0
+              }
+        }
       >
         <NotebookItem
+          showFolderRow={inNotes}
           item={item}
           index={index}
           expanded={expanded}
           onToggleExpanded={async () => {
-            useSideMenuNotebookExpandedStore
-              .getState()
-              .setExpanded(item.notebook.id);
+            useNotebookExpandedStore.getState().setExpanded(item.notebook.id);
             if (!expanded) {
-              useSideMenuNotebookTreeStore
+              useNotebookTreeStore
                 .getState()
                 .setTree(
-                  await useSideMenuNotebookTreeStore
+                  await useNotebookTreeStore
                     .getState()
                     .fetchAndAdd(item.notebook.id, item.depth + 1)
                 );
             } else {
-              useSideMenuNotebookTreeStore
-                .getState()
-                .removeChildren(item.notebook.id);
+              useNotebookTreeStore.getState().removeChildren(item.notebook.id);
             }
           }}
           disableExpand={disableExpand}
           selected={selected}
           selectionEnabled={selectionEnabled}
-          selectionStore={useSideMenuNotebookSelectionStore}
+          selectionStore={useNotebookSelectionStore}
           onItemUpdate={onItemUpdate}
           focused={focused}
           onPress={() => {
-            NotebookScreen.navigate(item.notebook, false);
-            dismissMenu();
+            NotebookScreen.navigate(item.notebook, inNotes);
+            if (!inNotes) dismissMenu();
           }}
           onLongPress={() => {
+            if (inNotes) {
+              Properties.present(item.notebook);
+              return;
+            }
             Properties.present(item.notebook, false, [
               {
                 id: "select",
                 title: strings.selectFolder(),
                 icon: "checkbox-outline",
                 onPress: () => {
-                  const store = useSideMenuNotebookSelectionStore;
+                  const store = useNotebookSelectionStore;
                   store.setState({
                     enabled: true,
                     selection: {}
@@ -299,6 +365,7 @@ const NotebookItemWrapper = React.memo(
       prev.item.notebook.dateModified === next.item.notebook.dateModified &&
       prev.item.notebook.dateEdited === next.item.notebook.dateEdited &&
       prev.item.hasChildren === next.item.hasChildren &&
+      prev.presentation === next.presentation &&
       prev.index === next.index &&
       prev.item.parentId === next.item.parentId
     );

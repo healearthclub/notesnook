@@ -17,12 +17,17 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { isFeatureAvailable } from "@notesnook/common";
 import { strings } from "@notesnook/intl";
-import React from "react";
+import React, { useState } from "react";
 import { Platform } from "react-native";
 import { FloatingButton } from "../../components/container/floating-button";
 import DelayLayout from "../../components/delay-layout";
 import { Header } from "../../components/header";
+import { AddNotebookSheet } from "../../components/sheets/add-notebook";
+import PaywallSheet from "../../components/sheets/paywall";
+import { SideMenuNotebooks } from "../../components/side-menu/side-menu-notebooks";
+import { NotesHomeTab, NotesHomeTabs } from "../../features/notes/home-tabs";
 import { NotesListLayout } from "../../features/notes/list-layout";
 import List from "../../components/list";
 import SelectionHeader from "../../components/selection-header";
@@ -31,12 +36,16 @@ import Navigation, { NavigationProps } from "../../services/navigation";
 import SettingsService from "../../services/settings";
 import useNavigationStore from "../../stores/use-navigation-store";
 import { useNotes } from "../../stores/use-notes-store";
+import { useSelectionStore } from "../../stores/use-selection-store";
 import { openEditor } from "../notes/common";
+import { MusicHome } from "../../features/notes/music-home";
 import { db } from "../../common/database";
 
 export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
   const [notes, loading] = useNotes();
   const isIOS = Platform.OS === "ios";
+  const [tab, setTab] = useState<NotesHomeTab>("recents");
+  const showFolders = isIOS && tab === "folders";
 
   const isFocused = useNavigationFocus(navigation, {
     onFocus: (prev) => {
@@ -54,10 +63,20 @@ export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
   const searchBar = (
     <Header
       renderedInRoute={route.name}
-      title={strings.routes[route.name]()}
+      title={showFolders ? strings.folders() : strings.routes[route.name]()}
       canGoBack={false}
       hasSearch={true}
+      roundedSearch={isIOS}
       onSearch={() => {
+        if (showFolders) {
+          Navigation.push("Search", {
+            placeholder: strings.searchInRoute(strings.folders()),
+            type: "notebook",
+            title: strings.folders(),
+            route: route.name
+          });
+          return;
+        }
         Navigation.push("Search", {
           placeholder: strings.searchInRoute(route.name),
           type: "note",
@@ -68,9 +87,23 @@ export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
       }}
       id={route.name}
       trailingAction={
-        isIOS && !loading && isFocused ? (
+        showFolders ? (
           <FloatingButton
             inline
+            circular
+            accessibilityLabel={strings.addFolder()}
+            testID="notes-add-folder"
+            alwaysVisible
+            onPress={async () => {
+              const feature = await isFeatureAvailable("notebooks");
+              if (feature.isAllowed) AddNotebookSheet.present();
+              else PaywallSheet.present(feature);
+            }}
+          />
+        ) : isIOS && !loading && isFocused ? (
+          <FloatingButton
+            inline
+            circular
             accessibilityLabel={strings.createNewNote()}
             onPress={openEditor}
             alwaysVisible
@@ -80,32 +113,52 @@ export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
     />
   );
 
+  const recents = (
+    <DelayLayout wait={loading}>
+      <List
+        data={notes}
+        dataType="note"
+        groupType="home"
+        renderedInRoute={route.name}
+        loading={loading || !isFocused}
+        headerTitle={strings.routes[route.name]()}
+        placeholder={{
+          title: route.name?.toLowerCase(),
+          paragraph: strings.notesEmpty(),
+          button: isIOS ? undefined : strings.createNewNote(),
+          hideTip: isIOS,
+          action: openEditor,
+          loading: strings.loadingNotes()
+        }}
+      />
+      {!isIOS && notes?.placeholders?.length ? (
+        <FloatingButton onPress={openEditor} alwaysVisible />
+      ) : null}
+    </DelayLayout>
+  );
+
   return (
     <>
       <NotesListLayout header={searchBar}>
-        <DelayLayout wait={loading}>
-          <List
-            data={notes}
-            dataType="note"
-            groupType="home"
-            renderedInRoute={route.name}
-            loading={loading || !isFocused}
-            headerTitle={strings.routes[route.name]()}
-            placeholder={{
-              title: route.name?.toLowerCase(),
-              paragraph: strings.notesEmpty(),
-              button: isIOS ? undefined : strings.createNewNote(),
-              hideTip: isIOS,
-              action: openEditor,
-              loading: strings.loadingNotes()
+        {isIOS ? (
+          <NotesHomeTabs
+            value={tab}
+            onChange={(next) => {
+              if (next === tab) return;
+              useSelectionStore.getState().clearSelection();
+              setTab(next);
             }}
+            recents={recents}
+            folders={<SideMenuNotebooks presentation="notes" />}
+            music={<MusicHome active={tab === "music" && isFocused} />}
           />
-          {!isIOS && notes?.placeholders?.length ? (
-            <FloatingButton onPress={openEditor} alwaysVisible />
-          ) : null}
-        </DelayLayout>
+        ) : (
+          recents
+        )}
       </NotesListLayout>
-      <SelectionHeader id={route.name} items={notes} type="note" />
+      {!showFolders && (
+        <SelectionHeader id={route.name} items={notes} type="note" />
+      )}
     </>
   );
 };

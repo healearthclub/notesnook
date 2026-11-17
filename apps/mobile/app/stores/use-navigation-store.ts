@@ -101,9 +101,9 @@ export interface RouteParams extends ParamListBase {
   AppLock: GenericRouteParam;
   Settings: GenericRouteParam;
   Auth: AuthParams;
-  LinkNotebooks: {
-    noteIds: string[];
-  };
+  LinkNotebooks:
+    | { noteIds: string[]; website?: never }
+    | { website: { url: string; title: string }; noteIds?: never };
   MoveNotebook: {
     selectedNotebooks: Notebook[];
   };

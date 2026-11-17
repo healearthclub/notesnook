@@ -20,6 +20,7 @@ import { useThemeColors } from "@notesnook/theme";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
+import { Platform } from "react-native";
 import { hideAllTooltips } from "../hooks/use-tooltip";
 import SettingsService from "../services/settings";
 import useNavigationStore, {
@@ -439,6 +440,18 @@ export const RootNavigation = () => {
 
         <RootStack.Screen
           name="LinkNotebooks"
+          options={({ route }) => {
+            const params = route.params as
+              | RouteParams["LinkNotebooks"]
+              | undefined;
+            return Platform.OS === "ios" && params?.website
+              ? {
+                  presentation: "transparentModal",
+                  animation: "none",
+                  gestureEnabled: false
+                }
+              : {};
+          }}
           getComponent={() => {
             LinkNotebooks =
               LinkNotebooks || require("../screens/link-notebooks").default;

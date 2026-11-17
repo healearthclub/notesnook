@@ -293,8 +293,13 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
     .failOffsetY([-10, 10])
     .onTouchesDown((event, state) => {
       const touch = event.changedTouches[0];
-      // The editor owns horizontal gestures outside the iOS back-swipe edge.
-      if (isIPhone && currentTab.value === 2 && touch && touch.absoluteX > 25) {
+      if (!isIPhone) return;
+      // Notes owns horizontal gestures while the drawer is closed.
+      // The editor keeps its back swipe at the left edge.
+      if (
+        (currentTab.value === 1 && !isDrawerOpen.value) ||
+        (currentTab.value === 2 && touch && touch.absoluteX > 25)
+      ) {
         state.fail();
       }
     })
@@ -318,6 +323,7 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
       const value = translateX.value + event.changeX * -1;
       if (
         value < 0 ||
+        (isIPhone && isDrawerOpen.value && value > homePosition) ||
         (currentTab.value === 2 && Platform.OS === "android") ||
         (value >= homePosition && isSmallTab) ||
         value > editorPosition
@@ -331,9 +337,13 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
       const velocityX =
         event.velocityX < 0 ? event.velocityX * -1 : event.velocityX;
       const isSwipeLeft = startX.value > translateX.value;
-      const finalValue = isSwipeLeft
+      const projectedValue = isSwipeLeft
         ? translateX.value - velocityX / 40.0
         : translateX.value + velocityX / 40.0;
+      const finalValue =
+        isIPhone && isDrawerOpen.value
+          ? Math.min(projectedValue, homePosition)
+          : projectedValue;
       const velocity = velocityX / 5000;
       const animationConfig: WithSpringConfig = {
         velocity: velocity,

@@ -17,14 +17,15 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { Notebook } from "@notesnook/core";
+import { getId, Notebook } from "@notesnook/core";
 import { strings } from "@notesnook/intl";
 import { useThemeColors } from "@notesnook/theme";
 import React, { useCallback, useEffect, useRef } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Platform, View } from "react-native";
 import { FlatList } from "react-native-actions-sheet";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { db } from "../../common/database";
+import { bookmarkContent } from "../../features/browser/bookmarks";
 import Navigation, { NavigationProps } from "../../services/navigation";
 import {
   createNotebookTreeStores,
@@ -36,6 +37,7 @@ import { useRelationStore } from "../../stores/use-relation-store";
 import { updateNotebook } from "../../utils/notebooks";
 import { AppFontSize } from "../../utils/size";
 import { DefaultAppStyles } from "../../utils/styles";
+import { BottomSheet } from "../../components/bottom-sheet";
 import { FloatingButton } from "../../components/container/floating-button";
 import { Header } from "../../components/header";
 import { NotebookItem } from "../../components/side-menu/notebook-item";
@@ -94,13 +96,35 @@ async function updateInitialSelectionState(items: string[]) {
   });
 }
 
-const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
-  const noteIds = props.route.params?.noteIds;
+function LinkNotebooks(props: NavigationProps<"LinkNotebooks">) {
+  if (Platform.OS !== "ios" || !props.route.params.website) {
+    return <NotebookPicker {...props} />;
+  }
+
+  return (
+    <BottomSheet
+      label="bookmark picker"
+      handleTestID="bookmark-sheet-grabber"
+      onClose={props.navigation.goBack}
+      heightFraction={0.5}
+      avoidKeyboard
+    >
+      {({ close }) => <NotebookPicker {...props} dismissSheet={close} />}
+    </BottomSheet>
+  );
+}
+
+const NotebookPicker = (
+  props: NavigationProps<"LinkNotebooks"> & { dismissSheet?: () => void }
+) => {
+  const { noteIds, website } = props.route.params;
   const { colors } = useThemeColors();
   const [notebooks, loading] = useNotebooks();
   const tree = useNotebookTreeStore((state) => state.tree);
   const searchQuery = useRef("");
   const searchTimer = useRef<NodeJS.Timeout>(undefined);
+  const savedWebsiteId = useRef<string>(undefined);
+  const savingWebsite = useRef(false);
   const [filteredNotebooks, setFilteredNotebooks] = React.useState(notebooks);
 
   useNavigationFocus(props.navigation, { focusOnInit: true });
@@ -151,7 +175,7 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
   );
 
   useEffect(() => {
-    updateInitialSelectionState(noteIds);
+    if (noteIds) updateInitialSelectionState(noteIds);
     return () => {
       useNotebookSelectionStore.setState({
         initialState: {},
@@ -162,9 +186,62 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
     };
   }, [noteIds]);
 
+  const saveWebsite = async (folderIds: string[]) => {
+    if (!website || !folderIds.length || savingWebsite.current) return;
+    savingWebsite.current = true;
+    try {
+      for (const folderId of folderIds) {
+        if (!(await db.notebooks.notebook(folderId))) {
+          throw new Error("A selected folder is no longer available.");
+        }
+      }
+      const id = savedWebsiteId.current ?? (savedWebsiteId.current = getId());
+      if (!(await db.notes.note(id))) {
+        await db.notes.add({
+          id,
+          title: website.title,
+          content: {
+            type: "tiptap",
+            data: bookmarkContent(website.url)
+          }
+        });
+      }
+      for (const folderId of folderIds) {
+        await db.notes.addToNotebook(folderId, id);
+        updateNotebook(folderId);
+        sendItemUpdateEvent(folderId, "notebook");
+      }
+      Navigation.queueRoutesForUpdate();
+      useRelationStore.getState().update();
+      if (props.navigation.isFocused()) {
+        if (props.dismissSheet) props.dismissSheet();
+        else props.navigation.goBack();
+      }
+      ToastManager.show({
+        heading: "Website saved",
+        type: "success",
+        context: "global"
+      });
+    } catch (error) {
+      ToastManager.error(error as Error);
+    } finally {
+      savingWebsite.current = false;
+    }
+  };
+
   const onSave = async () => {
     const selectionState = useNotebookSelectionStore.getState();
     const changedNotebooks = { ...selectionState.selection };
+
+    if (website) {
+      await saveWebsite(
+        Object.keys(changedNotebooks).filter(
+          (id) => changedNotebooks[id] === "selected"
+        )
+      );
+      return;
+    }
+    if (!noteIds) return;
 
     if (!selectionState.multiSelect) {
       for (const id in selectionState.initialState) {
@@ -208,6 +285,8 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
 
   return (
     <SafeAreaView
+      testID={props.dismissSheet ? "bookmark-folder-picker" : undefined}
+      edges={props.dismissSheet ? ["bottom", "left", "right"] : undefined}
       style={{
         gap: DefaultAppStyles.GAP_VERTICAL,
         flex: 1,
@@ -215,16 +294,17 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
       }}
     >
       <Header
-        title={strings.addToFolder()}
+        title={website ? "Save website to folder" : strings.addToFolder()}
         canGoBack
+        onLeftMenuButtonPress={props.dismissSheet}
         rightButton={
-          hasSelection
+          noteIds && hasSelection
             ? {
-              name: "restore",
-              onPress: () => {
-                updateInitialSelectionState(noteIds);
+                name: "restore",
+                onPress: () => {
+                  updateInitialSelectionState(noteIds);
+                }
               }
-            }
             : undefined
         }
       />
@@ -254,8 +334,9 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
               button={{
                 icon: "plus",
                 onPress: async () => {
-                  const notebooksFeature =
-                    await isFeatureAvailable("notebooks");
+                  const notebooksFeature = await isFeatureAvailable(
+                    "notebooks"
+                  );
                   if (!notebooksFeature.isAllowed) {
                     ToastManager.show({
                       message: notebooksFeature.error,
@@ -282,7 +363,7 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
               }}
             />
 
-            {!multiSelect ? (
+            {!website && !multiSelect ? (
               <Notice
                 text={strings.enableMultiSelect()}
                 type="information"
@@ -321,6 +402,7 @@ const LinkNotebooks = (props: NavigationProps<"LinkNotebooks">) => {
 
       {hasSelection ? (
         <FloatingButton
+          accessibilityLabel={website ? "Save website" : strings.save()}
           testID="floating-save-button"
           icon="check"
           alwaysVisible
@@ -408,8 +490,8 @@ const NotebookItemWrapper = React.memo(
                 !selected
                   ? "selected"
                   : !state.initialState[item.notebook.id]
-                    ? undefined
-                    : "deselected"
+                  ? undefined
+                  : "deselected"
               );
           }}
           canDisableSelectionMode={false}

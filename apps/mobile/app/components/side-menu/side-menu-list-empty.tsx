@@ -27,6 +27,7 @@ import { SideMenuHeader } from "./side-menu-header";
 type SideMenuListEmptyProps = {
   placeholder: string;
   isLoading?: boolean;
+  showHeader?: boolean;
 };
 
 export const SideMenuListEmpty = (props: SideMenuListEmptyProps) => {
@@ -38,14 +39,16 @@ export const SideMenuListEmpty = (props: SideMenuListEmptyProps) => {
         height: "100%"
       }}
     >
-      <View
-        style={{
-          backgroundColor: colors.primary.background,
-          paddingTop: DefaultAppStyles.GAP_VERTICAL
-        }}
-      >
-        <SideMenuHeader />
-      </View>
+      {props.showHeader !== false && (
+        <View
+          style={{
+            backgroundColor: colors.primary.background,
+            paddingTop: DefaultAppStyles.GAP_VERTICAL
+          }}
+        >
+          <SideMenuHeader />
+        </View>
+      )}
       <View
         style={{
           alignItems: "center",

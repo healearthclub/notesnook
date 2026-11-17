@@ -17,7 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { NativeModules, Platform } from "react-native";
+import { type ImageURISource, NativeModules, Platform } from "react-native";
 import * as Keychain from "react-native-keychain";
 import { create } from "zustand";
 
@@ -180,4 +180,99 @@ export async function signOutOfOhai() {
     throw new Error("Could not clear the saved sign-in. Please try again.");
   }
   useOhaiAccount.setState({ email: null, userId: null });
+}
+
+export type MusicTrack = {
+  id: string;
+  title: string;
+  artist: string;
+  artworkSource?: ImageURISource;
+  playback?: string;
+};
+
+type MusicTrackResponse = Omit<MusicTrack, "artworkSource"> & {
+  artwork?: string;
+};
+
+function isMusicTrack(track: unknown): track is MusicTrackResponse {
+  if (!track || typeof track !== "object") return false;
+  const candidate = track as Partial<MusicTrackResponse>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.title === "string" &&
+    typeof candidate.artist === "string" &&
+    (candidate.artwork === undefined ||
+      typeof candidate.artwork === "string") &&
+    (candidate.playback === undefined || typeof candidate.playback === "string")
+  );
+}
+
+export async function fetchOhaiMusic(
+  userId: string
+): Promise<MusicTrack[] | null> {
+  const session = await readSession();
+  if (session?.userId !== userId) return null;
+  const response = await request("/auth/native/music", {
+    headers: { Authorization: `Bearer ${session.token}` }
+  });
+  if (response.status === 401) return null;
+  if (!response.ok) throw new Error("Could not load your music library.");
+  const body = await response.json();
+  if (!Array.isArray(body?.tracks) || !body.tracks.every(isMusicTrack))
+    throw new Error("The music library returned an invalid response.");
+  return (body.tracks as MusicTrackResponse[]).map(
+    ({ id, title, artist, artwork, playback }) => ({
+      id,
+      title,
+      artist,
+      playback,
+      artworkSource: trackArtwork(id, artwork, session.token)
+    })
+  );
+}
+
+function trackArtwork(
+  id: string,
+  artwork: string | undefined,
+  token: string
+): ImageURISource | undefined {
+  if (artwork === "account") {
+    return {
+      uri: origin + "/auth/native/music/artwork?id=" + encodeURIComponent(id),
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "reload"
+    };
+  }
+  if (!artwork) return;
+  try {
+    const url = new URL(artwork);
+    if (url.protocol === "https:" && !url.username && !url.password)
+      return { uri: url.href };
+  } catch {
+    // Leave the placeholder visible when the artwork address is invalid.
+  }
+}
+
+export async function getMusicPlaybackSource(
+  userId: string,
+  track: MusicTrack
+) {
+  if (track.playback === "account") {
+    const session = await readSession();
+    if (session?.userId !== userId) return;
+    return {
+      url:
+        origin + "/auth/native/music/stream?id=" + encodeURIComponent(track.id),
+      token: session.token
+    };
+  }
+  if (!track.playback) return;
+  try {
+    const url = new URL(track.playback);
+    if (url.protocol === "https:" && !url.username && !url.password) {
+      return { url: url.href, token: "" };
+    }
+  } catch {
+    return;
+  }
 }

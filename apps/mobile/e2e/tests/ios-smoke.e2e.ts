@@ -192,6 +192,12 @@ describe("iOS local notes", () => {
       const homeAddress = element(by.id("browser-home-address"));
       const pageAddTab = element(by.id("browser-page-add-tab"));
       const minimize = element(by.id("browser-minimize-tab"));
+      const recent = element(by.id("browser-recent-folder"));
+      const folders = element(by.id("notes-header-folders"));
+      async function showRecentFolder() {
+        await tapUntilVisible(notesTab, folders);
+        await tapUntilVisible(folders, recent);
+      }
       await tapUntilVisible(browserTab, home);
       await device.takeScreenshot("ios-browser-empty");
       await homeAddress.tap();
@@ -241,9 +247,23 @@ describe("iOS local notes", () => {
       const sheet = element(by.id("browser-sheet"));
       await minimize.swipe("down", "fast", 0.32, 0.5, 0.5);
       await waitFor(home).toBeVisible().withTimeout(10000);
-      await expect(element(by.id("browser-home-tab-2"))).toBeVisible();
       await waitFor(sheet).not.toBeVisible().withTimeout(10000);
+      await expect(recent).not.toBeVisible();
+      await expect(homeResume).toBeVisible();
+      await device.takeScreenshot("ios-browser-home");
+      await tapUntilVisible(notesTab, element(by.id("editor.id")));
+      await web(by.id("editor.id"))
+        .element(by.web.cssSelector("#header > button:first-child"))
+        .tap();
+      await showRecentFolder();
+      await expect(firstTab).not.toExist();
+      await device.takeScreenshot("ios-browser-recent-collapsed");
+      await recent.tap();
+      await expect(element(by.id("browser-home-tab-2"))).toBeVisible();
       await device.takeScreenshot("ios-notes-browser-tabs");
+      await recent.tap();
+      await expect(firstTab).not.toExist();
+      await recent.tap();
 
       const profileTab = element(by.id("main-tab-profile"));
       await tapUntilVisible(profileTab, element(by.id("profile-screen")));
@@ -258,10 +278,12 @@ describe("iOS local notes", () => {
         launchArgs: { detoxEnableSynchronization: 0 }
       });
       await device.disableSynchronization();
-      await tapUntilVisible(browserTab, home, 10000);
-      await tapUntilVisible(homeResume, address);
+      await showRecentFolder();
+      await recent.tap();
+      await tapUntilVisible(element(by.id("browser-home-tab-2")), address);
       await waitForWeb(() => expect(heading).toHaveText("Second browser tab"));
       await tapUntilVisible(minimize, home);
+      await showRecentFolder();
       await tapUntilVisible(firstTab, address);
       await waitForWeb(() => expect(heading).toHaveText("Browser smoke test"));
       await web(by.id("browser-webview")).element(by.web.id("popup")).tap();
@@ -270,6 +292,7 @@ describe("iOS local notes", () => {
         .withTimeout(10000);
       await waitForWeb(() => expect(heading).toHaveText("Second browser tab"));
       await tapUntilVisible(minimize, home);
+      await showRecentFolder();
       await element(by.id("browser-close-tab-3")).tap();
       await waitFor(element(by.id("browser-home-tab-3")))
         .not.toExist()
@@ -287,8 +310,9 @@ describe("iOS local notes", () => {
       );
 
       await tapUntilVisible(minimize, home);
-      await element(by.id("browser-close-tab-4")).tap();
-      await waitFor(element(by.id("browser-home-tab-4")))
+      await showRecentFolder();
+      await element(by.label("Close Untitled page")).tap();
+      await waitFor(element(by.label("Close Untitled page")))
         .not.toExist()
         .withTimeout(10000);
       await tapUntilVisible(firstTab, address);

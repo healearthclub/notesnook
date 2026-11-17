@@ -19,7 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { strings } from "@notesnook/intl";
 import { useThemeColors } from "@notesnook/theme";
 import React from "react";
-import { Image, View } from "react-native";
+import { Image, Platform, View } from "react-native";
 import { NOTESNOOK_LOGO_SVG } from "../../assets/images/assets";
 import SettingsService from "../../services/settings";
 import { useThemeStore } from "../../stores/use-theme-store";
@@ -156,7 +156,7 @@ export const SideMenuHeader = (props: { rightButtons?: IconButtonProps[] }) => {
         ))}
         <SyncStatusButton />
         {inSheet ? <SideMenuThemeButton inHeader /> : null}
-        <SettingsIcon />
+        {Platform.OS === "ios" ? null : <SettingsIcon />}
       </View>
     </View>
   );

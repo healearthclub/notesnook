@@ -23,6 +23,7 @@ export function usesNotesTabLayout(route: RouteName | undefined) {
   return (
     Platform.OS === "ios" &&
     (route === "Notes" ||
+      route === "Notebook" ||
       route === "Favorites" ||
       route === "Reminders" ||
       route === "Monographs" ||

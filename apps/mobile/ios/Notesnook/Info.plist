@@ -80,13 +80,15 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Take a picture and add it to your note.</string>
+	<string>Take photos in Camera or add them to notes.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>$(PRODUCT_NAME) requires FaceID access for App Lock</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Only required by library- not requested in application</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Add photos from gallery to your note.</string>
+	<string>View your Camera Roll or add photos to notes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save pictures taken in Camera to your photo library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>ReactNativeQuickSQLite_AppGroup</key>
@@ -109,6 +111,7 @@
 	<array>
 		<string>fetch</string>
 		<string>processing</string>
+		<string>audio</string>
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>

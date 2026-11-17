@@ -148,10 +148,17 @@ export const Search = ({ route, navigation }: NavigationProps<"Search">) => {
   }, [onSearch, route.params?.type]);
 
   const searchAtBottom = usesNotesTabLayout(route.params.route);
-  const notesSearch = searchAtBottom && route.params.route === "Notes";
+  const notesSearch =
+    searchAtBottom &&
+    route.params.route === "Notes" &&
+    route.params.type === "note";
+  const folderSearch =
+    searchAtBottom &&
+    (route.params.route === "Notebook" || route.params.type === "notebook");
   const searchBar = (
     <SearchBar
-      rounded={notesSearch}
+      rounded={notesSearch || folderSearch}
+      placeholder={folderSearch ? route.params.placeholder : undefined}
       onChangeText={(query) => {
         const value = notesSearch ? query.trim() : query;
         if (notesSearch) {
@@ -182,6 +189,7 @@ export const Search = ({ route, navigation }: NavigationProps<"Search">) => {
           loading={loading}
           placeholder={{
             title: route.name,
+            hideTip: folderSearch && !searchStatus,
             paragraph:
               searchStatus || strings.searchInRoute(route.params?.title),
             loading: strings.searchingFor(currentQuery.current as string)

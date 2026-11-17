@@ -67,9 +67,8 @@ export default function TiptapEditorWrapper(props: {
 
   return (
     <div className={styles.keyboardControls}>
-      <div className={styles.formattingRow}>
-        {toolbar}
-        {showActions && (
+      {showActions && (
+        <div className={styles.sendRow}>
           <button
             id="editor-send-note"
             className={styles.keyboardAction}
@@ -94,22 +93,23 @@ export default function TiptapEditorWrapper(props: {
           >
             <svg
               aria-hidden="true"
-              width="20"
-              height="20"
+              width="22"
+              height="22"
               viewBox="0 0 24 24"
-              fill="none"
+              fill="currentColor"
               stroke="currentColor"
-              strokeWidth="2"
+              strokeWidth="1"
               strokeLinecap="round"
               strokeLinejoin="round"
             >
-              <path d="M12 20V4m-7 7 7-7 7 7" />
+              <path d="M14 4l7 7-7 7v-4.1c-5 0-8.5 1.6-11 5.1 1-5 4-10 11-10V4Z" />
             </svg>
           </button>
-        )}
-      </div>
-      {showActions && (
-        <div className={styles.keyboardAccessory}>
+        </div>
+      )}
+      <div className={styles.formattingRow}>
+        {toolbar}
+        {showActions && (
           <button
             id="editor-keyboard-done"
             className={styles.keyboardAction}
@@ -136,8 +136,8 @@ export default function TiptapEditorWrapper(props: {
               <path d="m5 12 4 4L19 6" />
             </svg>
           </button>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }

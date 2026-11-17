@@ -33,6 +33,7 @@ import { eOnNotebookUpdated } from "../../utils/events";
 import { AppFontSize, defaultBorderRadius } from "../../utils/size";
 import { DefaultAppStyles } from "../../utils/styles";
 import AppIcon from "../ui/AppIcon";
+import { FolderRow } from "../ui/folder-row";
 import { IconButton } from "../ui/icon-button";
 import { Pressable } from "../ui/pressable";
 import Paragraph from "../ui/typography/paragraph";
@@ -52,7 +53,8 @@ export const NotebookItem = ({
   onLongPress,
   onAddNotebook,
   canDisableSelectionMode,
-  disableExpand
+  disableExpand,
+  showFolderRow
 }: {
   index: number;
   item: TreeItem;
@@ -68,6 +70,7 @@ export const NotebookItem = ({
   onAddNotebook?: () => void;
   canDisableSelectionMode?: boolean;
   disableExpand?: boolean;
+  showFolderRow?: boolean;
 }) => {
   const notebook = item.notebook;
   const isFocused = focused;
@@ -93,6 +96,25 @@ export const NotebookItem = ({
       eUnSubscribeEvent(eOnNotebookUpdated, onNotebookUpdate);
     };
   }, [item.notebook.id, notebook.id, onItemUpdate]);
+
+  if (showFolderRow) {
+    const toggle =
+      item.hasChildren && !disableExpand ? onToggleExpanded : undefined;
+    return (
+      <FolderRow
+        title={notebook.title}
+        count={totalNotes?.(notebook.id) ?? 0}
+        depth={item.depth}
+        selected={focused}
+        expanded={toggle ? !!expanded : undefined}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        onToggleExpanded={toggle}
+        testID={`notebook-item-${item.depth}-${index}`}
+        expandTestID={`expand-notebook-${index}`}
+      />
+    );
+  }
 
   return (
     <View

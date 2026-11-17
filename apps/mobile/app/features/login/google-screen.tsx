@@ -17,6 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { strings } from "@notesnook/intl";
+import { useThemeColors } from "@notesnook/theme";
 import { useIsFocused } from "@react-navigation/native";
 import React, { useEffect, useRef, useState } from "react";
 import {
@@ -28,8 +30,11 @@ import {
   Text,
   View
 } from "react-native";
+import { ProfileAccount } from "../../components/account-settings";
 import { AuthHeader } from "../../components/auth/header";
 import { Button } from "../../components/ui/button";
+import { IconButton } from "../../components/ui/icon-button";
+import Navigation from "../../services/navigation";
 import { openLinkInBrowser } from "../../utils/functions";
 import {
   continueWithGoogle,
@@ -46,13 +51,16 @@ const muted = "#62655c";
 export function GoogleScreen({
   welcomeSignup = false,
   close,
-  active = true
+  active = true,
+  profile = false
 }: {
   welcomeSignup?: boolean;
   close?: () => void;
   active?: boolean;
+  profile?: boolean;
 }) {
   const isFocused = useIsFocused();
+  const { colors, isDark } = useThemeColors();
   const email = useOhaiAccount((state) => state.email);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState<string>();
@@ -104,6 +112,41 @@ export function GoogleScreen({
     }
   }
 
+  const settingsButton = profile ? (
+    <IconButton
+      name="cog-outline"
+      color={email ? colors.primary.icon : ink}
+      size={24}
+      style={styles.settingsButton}
+      testID="profile-setting-cog-outline"
+      accessibilityRole="button"
+      accessibilityLabel={strings.settings()}
+      onPress={() => Navigation.navigate("Settings")}
+    />
+  ) : null;
+
+  if (profile && email) {
+    return (
+      <>
+        {isFocused && active ? (
+          <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
+        ) : null}
+        <View style={styles.profileHeader}>
+          <Text
+            accessibilityRole="header"
+            style={[styles.profileTitle, { color: colors.primary.heading }]}
+          >
+            Profile
+          </Text>
+          {settingsButton}
+        </View>
+        <ScrollView contentContainerStyle={styles.profile}>
+          <ProfileAccount email={email} />
+        </ScrollView>
+      </>
+    );
+  }
+
   return (
     <>
       {isFocused && active ? <StatusBar barStyle="dark-content" /> : null}
@@ -130,6 +173,9 @@ export function GoogleScreen({
                 {close ? (
                   <Button
                     title="Done"
+                    accessibilityRole="button"
+                    accessibilityLabel="Done"
+                    testID="ohai-account-done"
                     type="accent"
                     accentColor="#141414"
                     disabled={busy}
@@ -138,6 +184,9 @@ export function GoogleScreen({
                 ) : null}
                 <Button
                   title="Sign out"
+                  accessibilityRole="button"
+                  accessibilityLabel="Sign out"
+                  testID="ohai-account-sign-out"
                   type="plain"
                   buttonType={{ text: muted }}
                   disabled={busy}
@@ -215,11 +264,25 @@ export function GoogleScreen({
           </View>
         </View>
       </ScrollView>
+      {settingsButton && (
+        <View style={styles.signedOutSettings}>{settingsButton}</View>
+      )}
     </>
   );
 }
 
 const styles = StyleSheet.create({
+  profile: { paddingHorizontal: 16, paddingVertical: 12 },
+  profileHeader: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between"
+  },
+  profileTitle: { fontSize: 30, fontWeight: "700" },
+  settingsButton: { width: 44, height: 44 },
+  signedOutSettings: { position: "absolute", top: 8, right: 16 },
   page: {
     flexGrow: 1,
     paddingHorizontal: 32,

@@ -45,6 +45,7 @@ export const Header = ({
   id,
   canGoBack,
   hasSearch,
+  roundedSearch = false,
   onSearch,
   rightButton,
   trailingAction
@@ -57,6 +58,7 @@ export const Header = ({
   canGoBack?: boolean;
   onPressDefaultRightButton?: () => void;
   hasSearch?: boolean;
+  roundedSearch?: boolean;
   onSearch?: () => void;
   rightButton?: IconButtonProps;
   trailingAction?: React.ReactNode;
@@ -109,7 +111,7 @@ export const Header = ({
           flex: trailingAction ? 1 : undefined,
           flexDirection: "row",
           justifyContent: "space-between",
-          borderRadius: 10,
+          borderRadius: hasSearch && roundedSearch ? 999 : 10,
           paddingVertical: 3,
           borderWidth: hasSearch ? 1 : 0,
           borderColor: colors.primary.border,

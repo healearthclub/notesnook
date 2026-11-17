@@ -16,8 +16,15 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+import { DatabaseUpdatedEvent, EVENTS } from "@notesnook/core";
 import { useThemeColors } from "@notesnook/theme";
-import React, { Ref, useImperativeHandle, useRef, useState } from "react";
+import React, {
+  Ref,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState
+} from "react";
 import {
   Alert,
   Keyboard,
@@ -29,14 +36,22 @@ import {
   View
 } from "react-native";
 import WebView, { WebViewMessageEvent } from "react-native-webview";
+import { db } from "../../common/database";
 import AppIcon from "../../components/ui/AppIcon";
+import Navigation from "../../services/navigation";
 
+import { isBookmarked } from "./bookmarks";
 import { blockedBrowserHost, isYouTubeLookalike } from "./browser-guard";
 import {
   observeBrowserMetadata,
   readBrowserMetadata
 } from "./browser-metadata";
 import { inlineVideoScript } from "./video-playback";
+import {
+  readVideoCardAvailability,
+  setVideoCardMode,
+  videoCardScript
+} from "./video-card";
 import {
   getYouTubeVideoId,
   observeYouTubePlayback,
@@ -50,11 +65,21 @@ function isWebAddress(url: string) {
   return /^https?:\/\//i.test(url);
 }
 
+function isSameWebOrigin(left: string, right: string) {
+  if (!isWebAddress(left) || !isWebAddress(right)) return false;
+  try {
+    return new URL(left).origin === new URL(right).origin;
+  } catch {
+    return false;
+  }
+}
+
 function isXGoogleSignIn(source: string, target: string) {
   try {
     const sourceOrigin = new URL(source).origin;
     return (
-      (sourceOrigin === "https://x.com" || sourceOrigin === "https://twitter.com") &&
+      (sourceOrigin === "https://x.com" ||
+        sourceOrigin === "https://twitter.com") &&
       new URL(target).origin === "https://accounts.google.com"
     );
   } catch {
@@ -83,6 +108,9 @@ export type BrowserPageControls = {
 type BrowserPageProps = {
   ref?: Ref<BrowserPageControls>;
   selected: boolean;
+  videoPreview: boolean;
+  pageTitle?: string;
+  pageAddress: string;
   initialAddress: string;
   initialPlayback?: YouTubeResume;
   onNavigate: (address: string, title?: string, favicon?: string) => void;
@@ -90,18 +118,23 @@ type BrowserPageProps = {
   onClose: () => void;
   onOpenWindow: (address: string) => void;
   onYouTubePlaybackChange: (playback: YouTubeResume | null) => void;
+  onVideoAvailabilityChange: (available: boolean) => void;
 };
 
 export function BrowserPage({
   ref,
   selected,
+  videoPreview,
+  pageTitle,
+  pageAddress,
   initialAddress,
   initialPlayback,
   onNavigate,
   onBlocked,
   onClose,
   onOpenWindow,
-  onYouTubePlaybackChange
+  onYouTubePlaybackChange,
+  onVideoAvailabilityChange
 }: BrowserPageProps) {
   const { colors } = useThemeColors();
   const webView = useRef<WebView>(null);
@@ -122,6 +155,47 @@ export function BrowserPage({
   const [canGoBack, setCanGoBack] = useState(false);
   const [loading, setLoading] = useState(false);
   const [failed, setFailed] = useState(false);
+  const [savedAddress, setSavedAddress] = useState<string>();
+  const bookmarked = !!pageAddress && savedAddress === pageAddress;
+
+  useEffect(() => {
+    if (!selected || !isWebAddress(pageAddress)) return;
+
+    let request = 0;
+    async function refreshBookmark() {
+      const current = ++request;
+      const saved = await isBookmarked(pageAddress).catch(() => false);
+      if (current === request) setSavedAddress(saved ? pageAddress : undefined);
+    }
+
+    const changes = db.eventManager.subscribe(
+      EVENTS.databaseUpdated,
+      ({ collection }: DatabaseUpdatedEvent) => {
+        if (
+          collection === "notes" ||
+          collection === "content" ||
+          collection === "relations" ||
+          collection === "notebooks"
+        )
+          void refreshBookmark();
+      }
+    );
+    const sync = db.eventManager.subscribe(
+      EVENTS.appRefreshRequested,
+      refreshBookmark
+    );
+
+    void refreshBookmark();
+    return () => {
+      request++;
+      changes.unsubscribe();
+      sync.unsubscribe();
+    };
+  }, [pageAddress, selected]);
+
+  useEffect(() => {
+    webView.current?.injectJavaScript(setVideoCardMode(videoPreview));
+  }, [videoPreview]);
 
   useImperativeHandle(ref, () => ({
     navigate: openAddress,
@@ -201,6 +275,7 @@ export function BrowserPage({
   }
 
   function restoreAfterProcessExit() {
+    onVideoAvailabilityChange(false);
     resetYouTubeSession();
     const uri = checkpoint.current
       ? resumeYouTubeAddress(checkpoint.current)
@@ -215,6 +290,7 @@ export function BrowserPage({
   function blockPage(host: string) {
     if (blockedHost.current === host) return;
     blockedHost.current = host;
+    onVideoAvailabilityChange(false);
     webView.current?.stopLoading();
     checkpoint.current = undefined;
     resetYouTubeSession();
@@ -256,6 +332,18 @@ export function BrowserPage({
     editingAddress.current = false;
     Keyboard.dismiss();
     openAddress(uri);
+  }
+
+  const canBookmark =
+    !!source && !loading && !failed && isWebAddress(currentAddress.current);
+
+  function bookmarkPage() {
+    const url = currentAddress.current;
+    if (!canBookmark || blockedBrowserHost(url)) return;
+    Keyboard.dismiss();
+    Navigation.navigate("LinkNotebooks", {
+      website: { url, title: pageTitle?.trim() || url }
+    });
   }
 
   return (
@@ -304,7 +392,13 @@ export function BrowserPage({
           <WebView
             key={webViewKey}
             ref={webView}
-            testID={selected ? "browser-webview" : undefined}
+            testID={
+              videoPreview
+                ? "browser-minimized-webview"
+                : selected
+                  ? "browser-webview"
+                  : undefined
+            }
             source={source}
             // X redirects embedded iOS agents without a Safari token to a custom scheme.
             applicationNameForUserAgent="Safari/604.1"
@@ -312,9 +406,12 @@ export function BrowserPage({
             disableJavaScriptDialogs
             fraudulentWebsiteWarningEnabled
             javaScriptCanOpenWindowsAutomatically={false}
-            injectedJavaScriptBeforeContentLoaded={inlineVideoScript}
+            injectedJavaScriptBeforeContentLoaded={
+              inlineVideoScript + videoCardScript
+            }
             injectedJavaScriptBeforeContentLoadedForMainFrameOnly={false}
-            allowsBackForwardNavigationGestures
+            allowsBackForwardNavigationGestures={!videoPreview}
+            scrollEnabled={!videoPreview}
             originWhitelist={["*"]}
             onShouldStartLoadWithRequest={({ url, isTopFrame }) => {
               if (blockedHost.current) return false;
@@ -355,12 +452,14 @@ export function BrowserPage({
                       text: "Open browser",
                       onPress: () => {
                         dismissPrompt();
-                        Linking.openURL("https://x.com/i/flow/login").catch(() => {
-                          Alert.alert(
-                            "Couldn’t open X",
-                            "Open x.com in your browser to sign in with Google."
-                          );
-                        });
+                        Linking.openURL("https://x.com/i/flow/login").catch(
+                          () => {
+                            Alert.alert(
+                              "Couldn’t open X",
+                              "Open x.com in your browser to sign in with Google."
+                            );
+                          }
+                        );
                       }
                     }
                   ],
@@ -372,6 +471,7 @@ export function BrowserPage({
             }}
             onLoadStart={() => {
               if (blockedHost.current) return;
+              onVideoAvailabilityChange(false);
               resetYouTubeSession();
               setFailed(false);
               setLoading(true);
@@ -385,6 +485,7 @@ export function BrowserPage({
               }
               observeYouTubePage(nativeEvent.url);
               if (isWebAddress(nativeEvent.url)) {
+                currentAddress.current = nativeEvent.url;
                 onNavigate(nativeEvent.url, nativeEvent.title);
                 webView.current?.injectJavaScript(observeBrowserMetadata);
               }
@@ -393,6 +494,14 @@ export function BrowserPage({
             onMessage={(event) => {
               if (blockedHost.current) return;
               const address = currentAddress.current;
+              const availability = readVideoCardAvailability(
+                event.nativeEvent.data
+              );
+              if (availability !== undefined) {
+                if (isSameWebOrigin(event.nativeEvent.url, address))
+                  onVideoAvailabilityChange(availability);
+                return;
+              }
               const metadata = readBrowserMetadata(
                 event.nativeEvent.data,
                 address
@@ -403,6 +512,7 @@ export function BrowserPage({
             }}
             onError={() => {
               if (blockedHost.current) return;
+              onVideoAvailabilityChange(false);
               resetYouTubeSession();
               setFailed(true);
             }}
@@ -447,7 +557,7 @@ export function BrowserPage({
           </Text>
         </View>
       )}
-      <View style={styles.toolbar}>
+      <View style={[styles.toolbar, videoPreview && styles.hiddenToolbar]}>
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
@@ -458,59 +568,81 @@ export function BrowserPage({
         >
           <AppIcon name="chevron-left" size={23} />
         </Pressable>
-        <TextInput
-          accessibilityLabel="Search or enter a website"
-          testID={selected ? "browser-address" : undefined}
-          autoCapitalize="none"
-          autoCorrect={false}
-          keyboardType="web-search"
-          returnKeyType="go"
-          placeholder="Search or address"
-          placeholderTextColor={colors.primary.paragraph}
-          value={address}
-          onFocus={() => {
-            editingAddress.current = true;
-          }}
-          onBlur={() => {
-            editingAddress.current = false;
-          }}
-          onChangeText={setAddress}
-          onSubmitEditing={submitAddress}
+        <View
           style={[
-            styles.address,
-            {
-              backgroundColor: colors.secondary.background,
-              color: colors.primary.heading
-            }
+            styles.addressBar,
+            { backgroundColor: colors.secondary.background }
           ]}
-        />
-        {loading ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Stop loading page"
-            testID="browser-stop-loading"
-            onPress={() => {
-              webView.current?.stopLoading();
-              setLoading(false);
+        >
+          <TextInput
+            accessibilityLabel="Search or enter a website"
+            testID={selected ? "browser-address" : undefined}
+            autoCapitalize="none"
+            autoCorrect={false}
+            keyboardType="web-search"
+            returnKeyType="go"
+            placeholder="Search or address"
+            placeholderTextColor={colors.primary.paragraph}
+            value={address}
+            onFocus={() => {
+              editingAddress.current = true;
             }}
-            style={styles.control}
-          >
-            <AppIcon name="close" color={colors.primary.accent} size={20} />
-          </Pressable>
-        ) : source ? (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Reload page"
-            onPress={() => {
-              resetYouTubeSession();
-              setFailed(false);
-              webView.current?.reload();
+            onBlur={() => {
+              editingAddress.current = false;
             }}
-            style={styles.control}
-          >
-            <AppIcon name="reload" size={20} />
-          </Pressable>
-        ) : null}
+            onChangeText={setAddress}
+            onSubmitEditing={submitAddress}
+            style={[
+              styles.address,
+              {
+                color: colors.primary.heading
+              }
+            ]}
+          />
+          {loading ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Stop loading page"
+              testID="browser-stop-loading"
+              onPress={() => {
+                webView.current?.stopLoading();
+                setLoading(false);
+              }}
+              style={styles.control}
+            >
+              <AppIcon name="close" color={colors.primary.accent} size={20} />
+            </Pressable>
+          ) : source ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Reload page"
+              testID="browser-reload-page"
+              onPress={() => {
+                resetYouTubeSession();
+                setFailed(false);
+                webView.current?.reload();
+              }}
+              style={styles.control}
+            >
+              <AppIcon name="reload" size={20} />
+            </Pressable>
+          ) : null}
+        </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={bookmarked ? "Website saved" : "Bookmark website"}
+          accessibilityState={{ disabled: !canBookmark, selected: bookmarked }}
+          disabled={!canBookmark}
+          testID={selected ? "browser-bookmark-page" : undefined}
+          onPress={bookmarkPage}
+          style={[styles.control, !canBookmark && styles.disabled]}
+        >
+          <AppIcon
+            name={bookmarked ? "bookmark" : "bookmark-outline"}
+            color={bookmarked ? colors.primary.accent : colors.primary.icon}
+            size={23}
+          />
+        </Pressable>
       </View>
     </View>
   );
@@ -518,6 +650,7 @@ export function BrowserPage({
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  hiddenToolbar: { display: "none" },
   toolbar: {
     flexDirection: "row",
     alignItems: "center",
@@ -538,10 +671,17 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 14
   },
+  addressBar: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 22
+  },
   address: {
     flex: 1,
+    minWidth: 0,
     minHeight: 44,
-    borderRadius: 22,
     paddingHorizontal: 14,
     fontSize: 16
   },

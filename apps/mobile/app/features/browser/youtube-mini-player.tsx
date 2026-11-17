@@ -20,84 +20,100 @@ import { useThemeColors } from "@notesnook/theme";
 import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import AppIcon from "../../components/ui/AppIcon";
+import {
+  compactDockCardStyle,
+  DismissibleCard,
+  dismissCardAction
+} from "./dismissible-card";
 import type { YouTubePlayback } from "./youtube-playback";
 
 type YouTubeMiniPlayerProps = {
   playback: YouTubePlayback;
+  compact?: boolean;
   onOpen: () => void;
   onToggle: () => void;
+  onDismiss: () => void;
 };
 
 export function YouTubeMiniPlayer({
   playback,
+  compact,
   onOpen,
-  onToggle
+  onToggle,
+  onDismiss
 }: YouTubeMiniPlayerProps) {
   const { colors } = useThemeColors();
 
   return (
-    <View
-      testID="youtube-mini-player"
-      style={[
-        styles.player,
-        {
-          backgroundColor: colors.secondary.background,
-          borderColor: colors.primary.border
-        }
-      ]}
-    >
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`Open YouTube in Browser, ${playback.title}`}
-        testID="youtube-mini-player-open"
-        onPress={onOpen}
-        style={styles.track}
-      >
-        <View style={styles.artwork}>
-          <AppIcon name="play" color="#fff" size={23} />
-        </View>
-        <View style={styles.text}>
-          <Text
-            numberOfLines={1}
-            style={[styles.title, { color: colors.primary.heading }]}
-          >
-            {playback.title}
-          </Text>
-          <Text numberOfLines={1} style={{ color: colors.primary.paragraph }}>
-            YouTube
-          </Text>
-        </View>
-      </Pressable>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={
-          (playback.playing ? "Pause" : "Play") + ": " + playback.title
-        }
-        testID="youtube-mini-player-toggle"
-        onPress={onToggle}
-        style={styles.toggle}
-      >
-        <AppIcon
-          name={playback.playing ? "pause" : "play"}
-          color={colors.primary.heading}
-          size={24}
-        />
-      </Pressable>
+    <DismissibleCard onDismiss={onDismiss}>
       <View
+        testID="youtube-mini-player"
         style={[
-          styles.progressTrack,
-          { backgroundColor: colors.primary.border }
+          styles.player,
+          compact && compactDockCardStyle,
+          {
+            backgroundColor: colors.secondary.background,
+            borderColor: colors.primary.border
+          }
         ]}
       >
-        <View
-          style={{
-            width: `${playback.progress * 100}%`,
-            height: "100%",
-            backgroundColor: colors.primary.accent
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`Open YouTube in Browser, ${playback.title}`}
+          accessibilityActions={dismissCardAction}
+          onAccessibilityAction={({ nativeEvent }) => {
+            if (nativeEvent.actionName === "dismiss") onDismiss();
           }}
-        />
+          testID="youtube-mini-player-open"
+          onPress={onOpen}
+          style={styles.track}
+        >
+          <View style={styles.artwork}>
+            <AppIcon name="play" color="#fff" size={23} />
+          </View>
+          <View style={styles.text}>
+            <Text
+              numberOfLines={1}
+              style={[styles.title, { color: colors.primary.heading }]}
+            >
+              {playback.title}
+            </Text>
+            <Text numberOfLines={1} style={{ color: colors.primary.paragraph }}>
+              YouTube
+            </Text>
+          </View>
+        </Pressable>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={
+            (playback.playing ? "Pause" : "Play") + ": " + playback.title
+          }
+          testID="youtube-mini-player-toggle"
+          onPress={onToggle}
+          style={[styles.toggle, compact && styles.compactToggle]}
+        >
+          <AppIcon
+            name={playback.playing ? "pause" : "play"}
+            color={colors.primary.heading}
+            size={24}
+          />
+        </Pressable>
+        <View
+          style={[
+            styles.progressTrack,
+            { backgroundColor: colors.primary.border }
+          ]}
+        >
+          <View
+            style={{
+              width: `${playback.progress * 100}%`,
+              height: "100%",
+              backgroundColor: colors.primary.accent
+            }}
+          />
+        </View>
       </View>
-    </View>
+    </DismissibleCard>
   );
 }
 
@@ -136,6 +152,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center"
   },
+  compactToggle: { width: 44 },
   progressTrack: {
     position: "absolute",
     bottom: 0,

@@ -170,6 +170,7 @@ export const Notebooks = (props: {
             height: 30
           }}
           name="plus"
+          accessibilityLabel={strings.newFolder()}
           onPress={async () => {
             const notebooksFeature = await isFeatureAvailable("notebooks");
             if (!notebooksFeature.isAllowed) {

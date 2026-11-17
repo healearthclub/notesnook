@@ -31,10 +31,12 @@ import { AppFontSize } from "../../utils/size";
 import { appBodyFont, DefaultAppStyles } from "../../utils/styles";
 export const SearchBar = ({
   onChangeText,
-  rounded = false
+  rounded = false,
+  placeholder
 }: {
   onChangeText: (value: string) => void;
   rounded?: boolean;
+  placeholder?: string;
 }) => {
   const [clearButton, setClearButton] = useState(false);
   const selectionMode = useSelectionStore((state) => state.selectionMode);
@@ -101,8 +103,12 @@ export const SearchBar = ({
           }}
           autoFocus
           onChangeText={_onChangeText}
-          accessibilityLabel={rounded ? strings.search() : undefined}
-          placeholder={rounded ? strings.search() : strings.typeAKeyword()}
+          accessibilityLabel={
+            rounded ? placeholder || strings.search() : undefined
+          }
+          placeholder={
+            placeholder || (rounded ? strings.search() : strings.typeAKeyword())
+          }
           textContentType="none"
           returnKeyLabel={strings.search()}
           returnKeyType="search"
