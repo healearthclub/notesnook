@@ -25,6 +25,10 @@ import {
   DismissibleCard,
   dismissCardAction
 } from "./dismissible-card";
+import {
+  AudioDestination,
+  PlayOnDeviceButton
+} from "../playback/play-on-device";
 import type { YouTubePlayback } from "./youtube-playback";
 
 type YouTubeMiniPlayerProps = {
@@ -68,9 +72,11 @@ export function YouTubeMiniPlayer({
           onPress={onOpen}
           style={styles.track}
         >
-          <View style={styles.artwork}>
-            <AppIcon name="play" color="#fff" size={23} />
-          </View>
+          {!compact && (
+            <View style={styles.artwork}>
+              <AppIcon name="play" color="#fff" size={23} />
+            </View>
+          )}
           <View style={styles.text}>
             <Text
               numberOfLines={1}
@@ -81,6 +87,7 @@ export function YouTubeMiniPlayer({
             <Text numberOfLines={1} style={{ color: colors.primary.paragraph }}>
               YouTube
             </Text>
+            <AudioDestination />
           </View>
         </Pressable>
         <Pressable
@@ -98,6 +105,12 @@ export function YouTubeMiniPlayer({
             size={24}
           />
         </Pressable>
+        <PlayOnDeviceButton
+          title={playback.title}
+          artist="YouTube"
+          kind="video"
+          compact
+        />
         <View
           style={[
             styles.progressTrack,
@@ -129,6 +142,7 @@ const styles = StyleSheet.create({
   },
   track: {
     flex: 1,
+    minWidth: 0,
     minHeight: 52,
     paddingLeft: 7,
     paddingVertical: 6,
@@ -144,7 +158,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#c90000"
   },
-  text: { flex: 1 },
+  text: { flex: 1, minWidth: 0 },
   title: { fontWeight: "600" },
   toggle: {
     width: 52,

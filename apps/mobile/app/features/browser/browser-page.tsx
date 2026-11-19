@@ -1,3 +1,5 @@
+import { libraryVideoId, registerLibraryVideo, videoRPC } from "../playback/library-video";
+import { v4 as uuid } from "uuid";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
 
@@ -38,6 +40,7 @@ import {
 import WebView, { WebViewMessageEvent } from "react-native-webview";
 import { db } from "../../common/database";
 import AppIcon from "../../components/ui/AppIcon";
+import { PlayOnDeviceButton } from "../playback/play-on-device";
 import Navigation from "../../services/navigation";
 
 import { isBookmarked } from "./bookmarks";
@@ -140,6 +143,20 @@ export function BrowserPage({
   const webView = useRef<WebView>(null);
   const editingAddress = useRef(false);
   const currentAddress = useRef(initialAddress);
+  const libraryVideoKey = useRef(uuid());
+  const videoBridge = useRef<ReturnType<typeof videoRPC> | undefined>(undefined);
+  if (!videoBridge.current) videoBridge.current = videoRPC(script => webView.current?.injectJavaScript(script), () => currentAddress.current);
+  useEffect(() => {
+    const contentId = libraryVideoId(pageAddress);
+    if (!contentId) return;
+    const bridge = videoBridge.current!;
+    const call = (action: string, position = 0, paused = true) => {
+      if (libraryVideoId(currentAddress.current) !== contentId) return Promise.reject(new Error("The account video changed."));
+      return bridge.call(action, position, paused);
+    };
+    return registerLibraryVideo({ key: libraryVideoKey.current, contentId, title: pageTitle || "Account video", snapshot: () => call("snapshot"), pause: () => call("pause"), prepare: () => call("prepare"), release: () => call("release"), resume: (position,paused) => call("resume", position, paused) });
+  }, [pageAddress,pageTitle]);
+  useEffect(() => () => videoBridge.current?.dispose(), []);
   const xSignInPromptOpen = useRef(false);
   const youtubeSession = useRef<YouTubeSession>(undefined);
   const nextYouTubeSession = useRef(0);
@@ -396,8 +413,8 @@ export function BrowserPage({
               videoPreview
                 ? "browser-minimized-webview"
                 : selected
-                  ? "browser-webview"
-                  : undefined
+                ? "browser-webview"
+                : undefined
             }
             source={source}
             // X redirects embedded iOS agents without a Safari token to a custom scheme.
@@ -493,6 +510,7 @@ export function BrowserPage({
             onLoadEnd={() => setLoading(false)}
             onMessage={(event) => {
               if (blockedHost.current) return;
+              if (videoBridge.current?.receive(event.nativeEvent.data, event.nativeEvent.url)) return;
               const address = currentAddress.current;
               const availability = readVideoCardAvailability(
                 event.nativeEvent.data
@@ -556,6 +574,9 @@ export function BrowserPage({
             Search the web or enter a website.
           </Text>
         </View>
+      )}
+      {selected && source && !videoPreview && !blocked && !failed && (
+        <PlayOnDeviceButton title={pageTitle || "Browser media"} kind="video" contentId={libraryVideoId(pageAddress)} adapterKey={libraryVideoKey.current} />
       )}
       <View style={[styles.toolbar, videoPreview && styles.hiddenToolbar]}>
         <Pressable

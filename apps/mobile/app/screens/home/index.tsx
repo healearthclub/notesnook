@@ -38,13 +38,23 @@ import useNavigationStore from "../../stores/use-navigation-store";
 import { useNotes } from "../../stores/use-notes-store";
 import { useSelectionStore } from "../../stores/use-selection-store";
 import { openEditor } from "../notes/common";
+import { BooksHome } from "../../features/notes/books-home";
 import { MusicHome } from "../../features/notes/music-home";
 import { db } from "../../common/database";
+import { MMKV } from "../../common/database/mmkv";
+
+const homeTabStorageKey = "nn::notesHomeTab";
 
 export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
   const [notes, loading] = useNotes();
   const isIOS = Platform.OS === "ios";
-  const [tab, setTab] = useState<NotesHomeTab>("recents");
+  const [tab, setTab] = useState<NotesHomeTab>(() => {
+    if (!isIOS) return "recents";
+    const saved = MMKV.getString(homeTabStorageKey);
+    return saved === "folders" || saved === "music" || saved === "books"
+      ? saved
+      : "recents";
+  });
   const showFolders = isIOS && tab === "folders";
 
   const isFocused = useNavigationFocus(navigation, {
@@ -147,10 +157,12 @@ export const Home = ({ navigation, route }: NavigationProps<"Notes">) => {
               if (next === tab) return;
               useSelectionStore.getState().clearSelection();
               setTab(next);
+              MMKV.setString(homeTabStorageKey, next);
             }}
             recents={recents}
             folders={<SideMenuNotebooks presentation="notes" />}
             music={<MusicHome active={tab === "music" && isFocused} />}
+            books={<BooksHome active={tab === "books" && isFocused} />}
           />
         ) : (
           recents

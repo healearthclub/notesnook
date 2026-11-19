@@ -90,3 +90,7 @@ We take all queries, issues and bug reports that you might have. Feel free to as
 - [Privacy policy](https://notesnook.com/privacy) & [Terms of service](https://notesnook.com/terms)
 - [Verify Notesnook encryption claims yourself — Vericrypt](https://vericrypt.notesnook.com/)
 - [Why Notesnook requires an email address?](https://blog.notesnook.com/why-notesnook-requires-an-email-address/)
+
+## Shared Heal Earth Club product development
+
+See [the local contributor guide](docs/product-development.md) for shared feature/story IDs, client delivery evidence and the cross-repository workflow.

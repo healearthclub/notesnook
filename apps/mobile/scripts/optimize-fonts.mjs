@@ -27,6 +27,12 @@ import path from "path";
 import { fileURLToPath } from "url";
 
 const EXTRA_ICON_NAMES = [
+  "cast-audio",
+  "bluetooth",
+  "television",
+  "cellphone",
+  "headphones",
+  "play-circle-outline",
   "menu",
   "folder-outline",
   "lock-open-outline",

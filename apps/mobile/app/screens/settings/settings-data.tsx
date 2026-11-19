@@ -36,6 +36,7 @@ import { TextInput } from "react-native-gesture-handler";
 import * as RNIap from "react-native-iap";
 import { DatabaseLogger, db } from "../../common/database";
 import { MMKV } from "../../common/database/mmkv";
+import { presentAppIconPicker } from "../../features/app-icon/app-icon-picker";
 import filesystem from "../../common/filesystem";
 import { presentDialog } from "../../components/dialog/functions";
 import { AppLockPassword } from "../../components/dialogs/applock-password";
@@ -855,6 +856,14 @@ export function getSettingsGroups(): SettingSection[] {
       id: "customize",
       name: strings.customization(),
       sections: [
+        {
+          id: "app-icon",
+          name: "Change App Icon",
+          description: "Black, cream or purple gradient. Free for everyone.",
+          icon: "shape",
+          hidden: () => Platform.OS !== "ios",
+          modifer: presentAppIconPicker
+        },
         {
           id: "personalization",
           type: "screen",

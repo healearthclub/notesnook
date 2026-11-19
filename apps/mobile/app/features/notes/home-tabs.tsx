@@ -4,9 +4,10 @@ import React, { ReactNode, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
 const tabs = [
-  { id: "recents", label: strings.recents },
+  { id: "recents", label: () => "Notes" },
   { id: "folders", label: strings.folders },
-  { id: "music", label: () => "Music" }
+  { id: "music", label: () => "Music" },
+  { id: "books", label: () => "Books" }
 ] as const;
 
 export type NotesHomeTab = (typeof tabs)[number]["id"];
@@ -15,23 +16,31 @@ export function NotesHomeTabs({
   onChange,
   recents,
   folders,
-  music
+  music,
+  books
 }: {
   value: NotesHomeTab;
   onChange: (tab: NotesHomeTab) => void;
   recents: ReactNode;
   folders: ReactNode;
   music: ReactNode;
+  books: ReactNode;
 }) {
   const { colors } = useThemeColors();
   const pager = useRef<ScrollView>(null);
   const [pageWidth, setPageWidth] = useState(0);
   const previousContentWidth = useRef(0);
-  const pages = { recents, folders, music };
+  const pages = { recents, folders, music, books };
 
   return (
     <>
-      <View accessibilityRole="tablist" style={styles.row}>
+      <ScrollView
+        horizontal
+        accessibilityRole="tablist"
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.row}
+        style={styles.tabStrip}
+      >
         {tabs.map(({ id, label }, index) => {
           const selected = value === id;
           return (
@@ -71,7 +80,7 @@ export function NotesHomeTabs({
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
       <ScrollView
         ref={pager}
         testID="notes-home-pager"
@@ -120,6 +129,7 @@ export function NotesHomeTabs({
 
 const styles = StyleSheet.create({
   pager: { flex: 1 },
+  tabStrip: { flexGrow: 0, flexShrink: 0 },
   row: {
     flexDirection: "row",
     gap: 20,

@@ -1,0 +1,46 @@
+name: Shared product implementation
+description: Implement or coordinate a reviewed shared product story
+title: "[Story] "
+body:
+  - type: input
+    id: story
+    attributes:
+      label: Stable story ID
+      description: Reference the existing shared Markdown story; do not copy its full spec.
+      placeholder: US-MUSIC-PLAYER-01
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Shared specification link and revision
+      description: Link a reviewed revision or identify a local source digest during local development.
+    validations:
+      required: true
+  - type: checkboxes
+    id: clients
+    attributes:
+      label: Affected clients
+      options:
+        - label: Web
+        - label: iOS
+        - label: Desktop
+        - label: Backend
+        - label: Extension
+        - label: Roku
+  - type: textarea
+    id: scope
+    attributes:
+      label: Client scope and acceptance criterion IDs
+      description: State intentional differences and exclusions.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies and unresolved contract decisions
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Implementation, verification and release evidence
+      description: Keep these separate; record what has not been run. Do not include secrets or private user data.

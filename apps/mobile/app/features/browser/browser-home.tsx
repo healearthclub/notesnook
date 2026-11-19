@@ -29,6 +29,7 @@ import {
   View
 } from "react-native";
 import { FolderRow } from "../../components/ui/folder-row";
+import { PlayOnDeviceButton } from "../playback/play-on-device";
 import AppIcon from "../../components/ui/AppIcon";
 
 import {
@@ -274,6 +275,7 @@ export function BrowserTabCard({
         <TabSummary tab={tab} selected />
         <AppIcon name="chevron-up" color={colors.primary.paragraph} size={24} />
       </Pressable>
+      {video && <PlayOnDeviceButton title={tabLabel(tab)} kind="video" />}
     </DismissibleCard>
   );
 }

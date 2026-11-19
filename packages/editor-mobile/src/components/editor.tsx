@@ -44,7 +44,6 @@ import { postAsyncWithTimeout, Settings } from "../utils";
 import { EditorEvents } from "../utils/editor-events";
 import { pendingSaveRequests } from "../utils/pending-saves";
 import Header from "./header";
-import StatusBar from "./statusbar";
 import Tags from "./tags";
 import TiptapEditorWrapper from "./tiptap";
 import Title from "./title";
@@ -595,7 +594,7 @@ const Tiptap = ({
               <div
                 style={{
                   flexDirection: "row",
-                  justifyContent: "space-between",
+                  justifyContent: "flex-end",
                   display: "flex",
                   alignItems: "center",
                   padding: "0px 16px",
@@ -604,10 +603,6 @@ const Tiptap = ({
                   minHeight: "28px"
                 }}
               >
-                <StatusBar
-                  container={containerRef}
-                  loading={controller.loading}
-                />
                 <Tags settings={settings} loading={controller.loading} />
               </div>
 

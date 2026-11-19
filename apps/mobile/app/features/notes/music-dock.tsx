@@ -14,6 +14,10 @@ import {
   dismissCardAction,
   dockCardStyle
 } from "../browser/dismissible-card";
+import {
+  AudioDestination,
+  PlayOnDeviceButton
+} from "../playback/play-on-device";
 import { TrackArtwork } from "./music-home";
 import { stopMusic, toggleMusic, useMusicPlayback } from "./music-player";
 
@@ -41,6 +45,35 @@ export function MusicDock({ compact }: { compact?: boolean }) {
           }
         ]}
       >
+        {!compact && track.artworkSource ? (
+          <TrackArtwork
+            key={track.artworkSource?.uri}
+            source={track.artworkSource}
+          />
+        ) : null}
+        <View style={styles.text}>
+          <Text
+            numberOfLines={1}
+            style={[styles.title, { color: colors.primary.heading }]}
+          >
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text
+              numberOfLines={1}
+              style={{ color: colors.secondary.paragraph }}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+          <AudioDestination />
+        </View>
+        <PlayOnDeviceButton
+          title={title}
+          artist={track.artist}
+          kind="music"
+          compact
+        />
         <Pressable
           accessibilityRole="button"
           accessibilityLabel={
@@ -76,28 +109,6 @@ export function MusicDock({ compact }: { compact?: boolean }) {
             )}
           </View>
         </Pressable>
-        <View style={styles.text}>
-          <Text
-            numberOfLines={1}
-            style={[styles.title, { color: colors.primary.heading }]}
-          >
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text
-              numberOfLines={1}
-              style={{ color: colors.secondary.paragraph }}
-            >
-              {subtitle}
-            </Text>
-          ) : null}
-        </View>
-        {compact || track.artworkSource ? (
-          <TrackArtwork
-            key={track.artworkSource?.uri}
-            source={track.artworkSource}
-          />
-        ) : null}
       </View>
     </DismissibleCard>
   );
@@ -105,7 +116,7 @@ export function MusicDock({ compact }: { compact?: boolean }) {
 
 const styles = StyleSheet.create({
   card: { borderRadius: 26 },
-  compact: { flexDirection: "row-reverse", borderRadius: 13 },
+  compact: { borderRadius: 13 },
   control: {
     minWidth: 44,
     minHeight: 44,

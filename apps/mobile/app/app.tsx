@@ -1,3 +1,4 @@
+import { listenForRokuConnection } from "./features/playback/connection";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
 
@@ -23,7 +24,13 @@ import {
   useThemeEngineStore
 } from "@notesnook/theme";
 import React, { PropsWithChildren, useEffect, useState } from "react";
-import { Appearance, I18nManager, Linking, StatusBar } from "react-native";
+import {
+  Appearance,
+  I18nManager,
+  Linking,
+  Platform,
+  StatusBar
+} from "react-native";
 import Shortcuts from "react-native-actions-shortcuts";
 import RNBootSplash from "react-native-bootsplash";
 import "react-native-gesture-handler";
@@ -34,6 +41,10 @@ import DialogProvider from "./components/dialog-provider";
 import { withErrorBoundry } from "./components/exception-handler";
 import GlobalSafeAreaProvider from "./components/globalsafearea";
 import { Toast } from "./components/toast";
+import { AppIconPickerSheet } from "./features/app-icon/app-icon-picker";
+import { listenForAudioOutput } from "./features/playback/audio-output";
+import { PlaybackDeviceSheet } from "./features/playback/play-on-device";
+import { listenForMusicPlayback } from "./features/notes/music-player";
 import { useAppEvents } from "./hooks/use-app-events";
 import {
   initShortcutListener,
@@ -60,6 +71,18 @@ if (appLockEnabled || appLockMode !== "none") {
 
 const App = (props: { configureMode?: "note-preview" }) => {
   useAppEvents();
+  useEffect(() => {
+    if (Platform.OS === "ios" && !props.configureMode) {
+      const stopPlaybackListener = listenForMusicPlayback();
+      const stopOutputListener = listenForAudioOutput();
+      const stopRokuListener = listenForRokuConnection();
+      return () => {
+        stopRokuListener();
+        stopOutputListener?.();
+        stopPlaybackListener();
+      };
+    }
+  }, [props.configureMode]);
   if (!props.configureMode) {
     //@ts-ignore
     globalThis["IS_MAIN_APP_RUNNING"] = true;
@@ -111,6 +134,8 @@ const App = (props: { configureMode?: "note-preview" }) => {
           <Toast />
         </ScopedThemeProvider>
         <DialogProvider />
+        {!props.configureMode && <PlaybackDeviceSheet />}
+        {!props.configureMode && <AppIconPickerSheet />}
         <AppLocked />
       </GestureHandlerRootView>
     </SafeAreaProvider>

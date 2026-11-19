@@ -9,6 +9,10 @@ import {
   Text,
   View
 } from "react-native";
+import {
+  AudioDestination,
+  PlayOnDeviceButton
+} from "../playback/play-on-device";
 import { AuthMode } from "../../components/auth/common";
 import AppIcon from "../../components/ui/AppIcon";
 import Navigation from "../../services/navigation";
@@ -19,7 +23,12 @@ import {
   useOhaiAccount
 } from "../login/google-session";
 
-import { playMusic, useMusicPlayback } from "./music-player";
+import {
+  advanceMusic,
+  playMusic,
+  togglePlaylistLoop,
+  useMusicPlayback
+} from "./music-player";
 
 type MusicResult =
   | { kind: "ready"; tracks: MusicTrack[] }
@@ -28,7 +37,10 @@ type MusicResult =
 
 export function MusicHome({ active }: { active: boolean }) {
   const { colors } = useThemeColors();
-  const selectedTrack = useMusicPlayback((state) => state.current?.track.id);
+  const currentTrack = useMusicPlayback((state) => state.current?.track);
+  const selectedTrack = currentTrack?.id;
+  const loop = useMusicPlayback((state) => state.loop);
+  const hasQueue = useMusicPlayback((state) => state.queue.length > 0);
   const userId = useOhaiAccount((state) => state.userId);
   const [result, setResult] = useState<{
     userId: string | null;
@@ -105,6 +117,62 @@ export function MusicHome({ active }: { active: boolean }) {
       refreshing={false}
       onRefresh={() => setRevision((value) => value + 1)}
       contentContainerStyle={styles.list}
+      ListHeaderComponent={
+        state.tracks.some((track) => !!track.playback) ? (
+          <View style={styles.playlistControls}>
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <Text style={{ color: colors.secondary.paragraph }}>
+                {loop ? "Playlist loops" : "Play in order"}
+              </Text>
+              {currentTrack && <AudioDestination />}
+            </View>
+            {currentTrack && (
+              <PlayOnDeviceButton
+                title={currentTrack.title}
+                artist={currentTrack.artist}
+                kind="music"
+                compact
+              />
+            )}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Previous song"
+              disabled={!hasQueue}
+              onPress={() => void advanceMusic(-1)}
+              testID="music-previous"
+              style={[styles.transport, !hasQueue && { opacity: 0.4 }]}
+            >
+              <AppIcon name="skip-previous" size={24} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Next song"
+              disabled={!hasQueue}
+              onPress={() => void advanceMusic(1)}
+              testID="music-next"
+              style={[styles.transport, !hasQueue && { opacity: 0.4 }]}
+            >
+              <AppIcon name="skip-next" size={24} />
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Loop playlist"
+              accessibilityState={{ selected: loop }}
+              onPress={togglePlaylistLoop}
+              testID="music-loop"
+              style={styles.transport}
+            >
+              <AppIcon
+                name="repeat"
+                size={22}
+                color={
+                  loop ? colors.primary.accent : colors.secondary.paragraph
+                }
+              />
+            </Pressable>
+          </View>
+        ) : null
+      }
       ListEmptyComponent={
         <View style={styles.message}>
           <AppIcon name="music-note" size={30} color={colors.primary.accent} />
@@ -123,7 +191,7 @@ export function MusicHome({ active }: { active: boolean }) {
             item.playback ? { selected: item.id === selectedTrack } : undefined
           }
           disabled={!item.playback}
-          onPress={() => void playMusic(item)}
+          onPress={() => void playMusic(item, state.tracks)}
           style={[styles.track, { borderBottomColor: colors.primary.border }]}
         >
           <TrackArtwork
@@ -187,6 +255,13 @@ export function TrackArtwork({
 }
 
 const styles = StyleSheet.create({
+  playlistControls: { flexDirection: "row", alignItems: "center" },
+  transport: {
+    width: 44,
+    minHeight: 44,
+    alignItems: "center",
+    justifyContent: "center"
+  },
   list: { flexGrow: 1, paddingHorizontal: 16 },
   message: {
     flex: 1,

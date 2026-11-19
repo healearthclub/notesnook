@@ -48,10 +48,7 @@ import {
 } from "../features/login/google-screen";
 import { useOhaiAccount } from "../features/login/google-session";
 import { MusicDock } from "../features/notes/music-dock";
-import {
-  listenForMusicPlayback,
-  useMusicPlayback
-} from "../features/notes/music-player";
+import { useMusicPlayback } from "../features/notes/music-player";
 import { NotesScreen } from "../features/notes";
 import { NotesToolbarAccessory } from "../features/notes/list-layout";
 import { usesNotesTabLayout } from "../features/notes/list-route";
@@ -131,8 +128,6 @@ function MainTabs({ children }: PropsWithChildren) {
   const profileActive = activeTab === "profile";
   const cameraActive = activeTab === "camera";
   const showTabBar = !notesActive || !fullscreen;
-
-  useEffect(listenForMusicPlayback, []);
 
   const openLibrary = useCallback(() => {
     if (capturingPhoto.current) return;

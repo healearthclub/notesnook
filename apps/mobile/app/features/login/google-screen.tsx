@@ -34,6 +34,7 @@ import { ProfileAccount } from "../../components/account-settings";
 import { AuthHeader } from "../../components/auth/header";
 import { Button } from "../../components/ui/button";
 import { IconButton } from "../../components/ui/icon-button";
+import useGlobalSafeAreaInsets from "../../hooks/use-global-safe-area-insets";
 import Navigation from "../../services/navigation";
 import { openLinkInBrowser } from "../../utils/functions";
 import {
@@ -60,6 +61,7 @@ export function GoogleScreen({
   profile?: boolean;
 }) {
   const isFocused = useIsFocused();
+  const insets = useGlobalSafeAreaInsets();
   const { colors, isDark } = useThemeColors();
   const email = useOhaiAccount((state) => state.email);
   const [busy, setBusy] = useState(true);
@@ -265,7 +267,9 @@ export function GoogleScreen({
         </View>
       </ScrollView>
       {settingsButton && (
-        <View style={styles.signedOutSettings}>{settingsButton}</View>
+        <View style={[styles.signedOutSettings, { top: insets.top + 8 }]}>
+          {settingsButton}
+        </View>
       )}
     </>
   );

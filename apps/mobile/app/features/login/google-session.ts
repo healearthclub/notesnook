@@ -1,3 +1,4 @@
+import { isHealEarthAccountId } from "./account-identity";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
 
@@ -34,8 +35,7 @@ function isAccount(value: unknown): value is Account {
   if (!value || typeof value !== "object") return false;
   const account = value as Partial<Account>;
   return (
-    typeof account.userId === "string" &&
-    /^google:.+/.test(account.userId) &&
+    isHealEarthAccountId(account.userId) &&
     typeof account.email === "string" &&
     typeof account.expiresAt === "number" &&
     Number.isSafeInteger(account.expiresAt) &&
@@ -162,6 +162,7 @@ export async function continueWithGoogle() {
     keychainOptions
   );
   if (!saved) throw new Error("Could not save your sign-in on this device.");
+  clearMusicPlaybackSession();
   useOhaiAccount.setState({ email: session.email, userId: session.userId });
 }
 
@@ -231,6 +232,47 @@ export async function fetchOhaiMusic(
   );
 }
 
+// Account-scoped book requests reuse the existing Keychain session, never expose it to UI.
+export async function requestOhaiBooks(
+  userId: string,
+  bookId?: string
+): Promise<unknown | null> {
+  if (bookId && !/^[A-Za-z0-9_-]{1,100}$/.test(bookId))
+    throw new Error("Invalid book ID.");
+  const session = await readSession();
+  if (session?.userId !== userId) return null;
+  const response = await request(
+    "/auth/native/books" + (bookId ? "?id=" + encodeURIComponent(bookId) : ""),
+    {
+      headers: {
+        Authorization: `Bearer ${session.token}`,
+        "X-Books-Account": userId
+      }
+    }
+  );
+  if (response.status === 401) return null;
+  if (response.status === 404 && bookId)
+    throw new Error(
+      "This reading copy isn’t available in your account. Sync it from Heal Earth Club and refresh Books."
+    );
+  if (response.status === 404 || response.status === 503)
+    throw new Error(
+      "Account books are not available yet. Try again after Heal Earth Club is updated."
+    );
+  if (!response.ok) throw new Error("Could not load your books. Try again.");
+  const raw = await response.text();
+  if (raw.length > 2_000_000)
+    throw new Error("The book response is too large.");
+  const body: unknown = JSON.parse(raw);
+  const current = await readSession();
+  if (
+    current?.token !== session.token ||
+    useOhaiAccount.getState().userId !== userId
+  )
+    return null;
+  return body;
+}
+
 function trackArtwork(
   id: string,
   artwork: string | undefined,
@@ -253,13 +295,37 @@ function trackArtwork(
   }
 }
 
+// Keep the active music credential in memory so changing tracks does not
+// require an unlocked Keychain. It is released when playback or the account ends.
+let musicSession: Session | null = null;
+let musicSessionGeneration = 0;
+
+export function clearMusicPlaybackSession() {
+  musicSession = null;
+  musicSessionGeneration++;
+}
+
+useOhaiAccount.subscribe((state, previous) => {
+  if (state.userId !== previous.userId) clearMusicPlaybackSession();
+});
+
 export async function getMusicPlaybackSource(
   userId: string,
   track: MusicTrack
 ) {
   if (track.playback === "account") {
-    const session = await readSession();
-    if (session?.userId !== userId) return;
+    const generation = musicSessionGeneration;
+    const session =
+      isSession(musicSession) && musicSession.userId === userId
+        ? musicSession
+        : await readSession();
+    if (
+      generation !== musicSessionGeneration ||
+      session?.userId !== userId ||
+      useOhaiAccount.getState().userId !== userId
+    )
+      return;
+    musicSession = session;
     return {
       url:
         origin + "/auth/native/music/stream?id=" + encodeURIComponent(track.id),
@@ -275,4 +341,38 @@ export async function getMusicPlaybackSource(
   } catch {
     return;
   }
+}
+
+let playbackCleanupSession: Session | undefined;
+
+// First-party playback control keeps the native credential in this session boundary.
+export async function requestOhaiPlayback(userId: string, path: string, data?: unknown): Promise<unknown> {
+  if (!/^(receivers|queues|sessions(?:\/[A-Za-z0-9_-]{1,100}(?:\/(?:commands(?:\/[A-Za-z0-9_-]{1,100})?|queue\/[0-9]{1,5}|detach))?)?)$/.test(path)) throw new Error("Invalid TV request.");
+  const session = await readSession();
+  if (!session || session.userId !== userId || useOhaiAccount.getState().userId !== userId) throw new Error("Sign in to connect to your TV.");
+  playbackCleanupSession=session;
+  const response = await request("/auth/native/playback/" + path, {
+    method: data === undefined ? "GET" : "POST",
+    headers: { Authorization: `Bearer ${session.token}`, ...(data === undefined ? {} : { "Content-Type": "application/json" }) },
+    ...(data === undefined ? {} : { body: JSON.stringify(data) })
+  });
+  const text = await response.text();
+  if (text.length > 262144) throw new Error("The TV response is too large.");
+  const body: unknown = JSON.parse(text);
+  const current = await readSession();
+  if (current?.token !== session.token || useOhaiAccount.getState().userId !== userId) throw new Error("Your account changed.");
+  if (!response.ok) {
+    const error = new Error(typeof body === "object" && body && "error" in body && typeof body.error === "string" ? body.error : "Could not connect to your TV.");
+    Object.assign(error, { status: response.status });
+    throw error;
+  }
+  return body;
+}
+
+// Cleanup only: the previous account credential never enters the UI or a receiver payload.
+export async function detachOhaiPlaybackForAccount(userId: string, sessionId: string) {
+ const session=playbackCleanupSession;
+ if(!session||session.userId!==userId||!/^[-\w]{1,100}$/.test(sessionId))return;
+ playbackCleanupSession=undefined;
+ try { await request("/auth/native/playback/sessions/"+sessionId+"/detach",{method:"POST",headers:{Authorization:`Bearer ${session.token}`,"Content-Type":"application/json"},body:"{}"}); } catch { /* Already-issued commands remain bounded by their server expiry. */ }
 }
