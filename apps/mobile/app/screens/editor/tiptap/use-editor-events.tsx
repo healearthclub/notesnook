@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import PublishNoteSheet from "../../../components/sheets/publish-note";
 /* eslint-disable no-case-declarations */
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { isFeatureAvailable, useAreFeaturesAvailable } from "@notesnook/common";
@@ -70,7 +71,6 @@ import {
   eOnExitEditor,
   eOnLoadNote,
   eOpenFullscreenEditor,
-  eOpenPublishNoteDialog,
   eUnlockWithBiometrics,
   eUnlockWithPassword
 } from "../../../utils/events";
@@ -90,7 +90,7 @@ import { ShareComponent } from "../../../components/sheets/export-notes/share";
 
 const publishNote = async () => {
   const user = useUserStore.getState().user;
-  if (!user) {
+  if (Platform.OS !== "ios" && !user) {
     ToastManager.show({
       heading: strings.loginRequired(),
       context: "global",
@@ -104,7 +104,7 @@ const publishNote = async () => {
     return;
   }
 
-  if (!user?.isEmailConfirmed) {
+  if (Platform.OS !== "ios" && !user?.isEmailConfirmed) {
     ToastManager.show({
       heading: strings.emailNotConfirmed(),
       context: "global"
@@ -129,7 +129,7 @@ const publishNote = async () => {
     if (editorState().isFocused) {
       editorState().isFocused = true;
     }
-    eSendEvent(eOpenPublishNoteDialog, note);
+    if (note) PublishNoteSheet.present(note);
   }
 };
 

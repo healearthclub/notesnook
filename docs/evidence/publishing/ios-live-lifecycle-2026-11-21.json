@@ -1,0 +1,59 @@
+{
+  "id": "eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+  "note_id": "6b01aecfb32b185ff208bad6",
+  "slug": "ios-owned-publishing-verification",
+  "title": "IOS owned publishing verification",
+  "state": "published",
+  "listed": 0,
+  "revision": 1,
+  "blob_key": "monographs/eebd5e90-4bc9-42ea-b47c-571fcffc8261/72Rf5wEBemkMLyfHd24VitMgDV1N2_yCq7PKwzgjpms.json",
+  "canonical": "https://healearth.club/@trub/p/ios-owned-publishing-verification",
+  "viewer": "https://pinterest-google-clone.trubucla.workers.dev/monograph/eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+  "nativeSignedInPublish": true,
+  "unlistedDefaultVerified": true,
+  "signedOutReadVerified": true,
+  "publishedAt": "2026-11-21T14:49:56.386Z",
+  "updatedTitle": "IOS owned publishing verification updated",
+  "updatedRevision": 2,
+  "updatedBlobKey": "monographs/eebd5e90-4bc9-42ea-b47c-571fcffc8261/2LUzgApjfVkZPU4mRB2Z5tPVnXveseKeoLkzy0iv-Vc.json",
+  "listedAfterExplicitOptIn": true,
+  "stableAliasAfterTitleEdit": true,
+  "independentBackupBytesVerified": true,
+  "updatedAt": "2026-11-21T14:50:45.504Z",
+  "withdrawalChecks": [
+    {
+      "url": "https://healearth.club/@trub/p/ios-owned-publishing-verification",
+      "status": 404
+    },
+    {
+      "url": "https://pinterest-google-clone.trubucla.workers.dev/monograph/eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+      "status": 404
+    },
+    {
+      "url": "https://pinterest-google-clone.trubucla.workers.dev/api/monographs/public/eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+      "status": 404
+    }
+  ],
+  "listingRemoved": true,
+  "restartRestoredAccountAndEdition": true,
+  "nativeUnpublishConfirmed": true,
+  "primaryAndRecoveryRevisionsRemoved": true,
+  "finalMetadata": {
+    "id": "eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+    "state": "unpublished",
+    "enabled": 0,
+    "listed": 0,
+    "blob_key": null,
+    "revision": 3
+  },
+  "withdrawnAt": "2026-11-21T15:14:09.487Z",
+  "physicalBuild": {
+    "version": "1.0.0",
+    "build": "1",
+    "bundleId": "org.healearth.ohai",
+    "signedArchiveVerified": true,
+    "installed": true,
+    "launched": true,
+    "physicalUserAcceptance": "pending"
+  }
+}

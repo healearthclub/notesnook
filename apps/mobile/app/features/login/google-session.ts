@@ -1,4 +1,3 @@
-import { isHealEarthAccountId } from "./account-identity";
 /*
 This file is part of the Notesnook project (https://notesnook.com/)
 
@@ -18,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import { isHealEarthAccountId } from "./account-identity";
 import { type ImageURISource, NativeModules, Platform } from "react-native";
 import * as Keychain from "react-native-keychain";
 import { create } from "zustand";
@@ -346,23 +346,51 @@ export async function getMusicPlaybackSource(
 let playbackCleanupSession: Session | undefined;
 
 // First-party playback control keeps the native credential in this session boundary.
-export async function requestOhaiPlayback(userId: string, path: string, data?: unknown): Promise<unknown> {
-  if (!/^(receivers|queues|sessions(?:\/[A-Za-z0-9_-]{1,100}(?:\/(?:commands(?:\/[A-Za-z0-9_-]{1,100})?|queue\/[0-9]{1,5}|detach))?)?)$/.test(path)) throw new Error("Invalid TV request.");
+export async function requestOhaiPlayback(
+  userId: string,
+  path: string,
+  data?: unknown
+): Promise<unknown> {
+  if (
+    !/^(receivers|queues|sessions(?:\/[A-Za-z0-9_-]{1,100}(?:\/(?:commands(?:\/[A-Za-z0-9_-]{1,100})?|queue\/[0-9]{1,5}|detach))?)?)$/.test(
+      path
+    )
+  )
+    throw new Error("Invalid TV request.");
   const session = await readSession();
-  if (!session || session.userId !== userId || useOhaiAccount.getState().userId !== userId) throw new Error("Sign in to connect to your TV.");
-  playbackCleanupSession=session;
+  if (
+    !session ||
+    session.userId !== userId ||
+    useOhaiAccount.getState().userId !== userId
+  )
+    throw new Error("Sign in to connect to your TV.");
+  playbackCleanupSession = session;
   const response = await request("/auth/native/playback/" + path, {
     method: data === undefined ? "GET" : "POST",
-    headers: { Authorization: `Bearer ${session.token}`, ...(data === undefined ? {} : { "Content-Type": "application/json" }) },
+    headers: {
+      Authorization: `Bearer ${session.token}`,
+      ...(data === undefined ? {} : { "Content-Type": "application/json" })
+    },
     ...(data === undefined ? {} : { body: JSON.stringify(data) })
   });
   const text = await response.text();
   if (text.length > 262144) throw new Error("The TV response is too large.");
   const body: unknown = JSON.parse(text);
   const current = await readSession();
-  if (current?.token !== session.token || useOhaiAccount.getState().userId !== userId) throw new Error("Your account changed.");
+  if (
+    current?.token !== session.token ||
+    useOhaiAccount.getState().userId !== userId
+  )
+    throw new Error("Your account changed.");
   if (!response.ok) {
-    const error = new Error(typeof body === "object" && body && "error" in body && typeof body.error === "string" ? body.error : "Could not connect to your TV.");
+    const error = new Error(
+      typeof body === "object" &&
+      body &&
+      "error" in body &&
+      typeof body.error === "string"
+        ? body.error
+        : "Could not connect to your TV."
+    );
     Object.assign(error, { status: response.status });
     throw error;
   }
@@ -370,9 +398,91 @@ export async function requestOhaiPlayback(userId: string, path: string, data?: u
 }
 
 // Cleanup only: the previous account credential never enters the UI or a receiver payload.
-export async function detachOhaiPlaybackForAccount(userId: string, sessionId: string) {
- const session=playbackCleanupSession;
- if(!session||session.userId!==userId||!/^[-\w]{1,100}$/.test(sessionId))return;
- playbackCleanupSession=undefined;
- try { await request("/auth/native/playback/sessions/"+sessionId+"/detach",{method:"POST",headers:{Authorization:`Bearer ${session.token}`,"Content-Type":"application/json"},body:"{}"}); } catch { /* Already-issued commands remain bounded by their server expiry. */ }
+export async function detachOhaiPlaybackForAccount(
+  userId: string,
+  sessionId: string
+) {
+  const session = playbackCleanupSession;
+  if (
+    !session ||
+    session.userId !== userId ||
+    !/^[-\w]{1,100}$/.test(sessionId)
+  )
+    return;
+  playbackCleanupSession = undefined;
+  try {
+    await request("/auth/native/playback/sessions/" + sessionId + "/detach", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${session.token}`,
+        "Content-Type": "application/json"
+      },
+      body: "{}"
+    });
+  } catch {
+    /* Already-issued commands remain bounded by their server expiry. */
+  }
+}
+
+// Publishing uses the same first-party credential boundary, with its own path
+// allowlist. The credential never enters the editor, storage record or viewer.
+export async function requestOhaiPublishing(
+  userId: string,
+  path: string,
+  method: "GET" | "POST" | "DELETE" = "GET",
+  data?: unknown
+): Promise<unknown> {
+  if (
+    !/^(capabilities|v2|[A-Za-z0-9_-]{1,128}(?:\/metadata)?)$/.test(path) ||
+    !["GET", "POST", "DELETE"].includes(method)
+  )
+    throw new Error("Invalid publishing request.");
+  const session = await readSession();
+  if (
+    !session ||
+    session.userId !== userId ||
+    useOhaiAccount.getState().userId !== userId
+  )
+    throw new Error("Your selected account changed. Reopen publishing.");
+  const response = await request("/auth/native/monographs/" + path, {
+    method,
+    headers: {
+      Authorization: `Bearer ${session.token}`,
+      "X-Heal-Earth-Account": userId,
+      ...(data === undefined ? {} : { "Content-Type": "application/json" })
+    },
+    ...(data === undefined ? {} : { body: JSON.stringify(data) })
+  });
+  const raw = await response.text();
+  if (raw.length > 65536)
+    throw new Error("The publishing response is too large.");
+  const current = await readSession();
+  if (
+    current?.token !== session.token ||
+    useOhaiAccount.getState().userId !== userId
+  )
+    throw new Error("Your selected account changed. Reopen publishing.");
+  let body: unknown;
+  try {
+    body = JSON.parse(raw);
+  } catch {
+    throw new Error("Publishing returned an invalid response.");
+  }
+  if (!response.ok) {
+    const v =
+      body && typeof body === "object" ? (body as Record<string, unknown>) : {};
+    const error = new Error(
+      typeof v.error === "string"
+        ? v.error
+        : "Publishing is unavailable. Retry the same note."
+    );
+    Object.assign(error, {
+      status: response.status,
+      code: typeof v.code === "string" ? v.code : "unavailable",
+      retryable: v.retryable === true,
+      publicationState: v.publicationState
+    });
+    throw error;
+  }
+  return body;
 }

@@ -863,7 +863,7 @@ export const useActions = ({
     }
 
     async function publishNote() {
-      if (!user) {
+      if (Platform.OS !== "ios" && !user) {
         ToastManager.show({
           heading: strings.loginRequired(),
           context: "local",
@@ -877,7 +877,7 @@ export const useActions = ({
         return;
       }
 
-      if (!user?.isEmailConfirmed) {
+      if (Platform.OS !== "ios" && !user?.isEmailConfirmed) {
         ToastManager.show({
           heading: strings.confirmEmailToPublish(),
           context: "local"
