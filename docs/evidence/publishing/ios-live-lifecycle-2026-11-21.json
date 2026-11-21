@@ -54,6 +54,42 @@
     "signedArchiveVerified": true,
     "installed": true,
     "launched": true,
-    "physicalUserAcceptance": "pending"
+    "physicalUserAcceptance": "passed \u2014 user confirmed full publish/open/unpublish on installed iPhone",
+    "reportedAt": "2026-11-21T15:17:33.320623+00:00"
+  },
+  "brandedPilot": {
+    "version": "38639bdd-507b-4185-b6c8-9446c2df759c",
+    "enabled": true,
+    "archiveEnabled": false,
+    "scope": "verified owner only",
+    "nativeCopyLink": "https://healearth.club/@trub/p/ios-owned-publishing-verification",
+    "copiedThroughActualNativeUI": true,
+    "anonymousReaderOpened": true,
+    "withdrawnAgain": true,
+    "withdrawalChecks": [
+      {
+        "url": "https://healearth.club/@trub/p/ios-owned-publishing-verification",
+        "status": 404
+      },
+      {
+        "url": "https://pinterest-google-clone.trubucla.workers.dev/monograph/eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+        "status": 404
+      },
+      {
+        "url": "https://pinterest-google-clone.trubucla.workers.dev/api/monographs/public/eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+        "status": 404
+      }
+    ],
+    "verifiedAt": "2026-11-21T15:21:12.575Z",
+    "finalMetadata": {
+      "id": "eebd5e90-4bc9-42ea-b47c-571fcffc8261",
+      "state": "unpublished",
+      "enabled": 0,
+      "listed": 0,
+      "blob_key": null,
+      "revision": 5,
+      "title": "IOS owned publishing verification updated"
+    },
+    "primaryAndRecoveryCopyRemoved": true
   }
 }
