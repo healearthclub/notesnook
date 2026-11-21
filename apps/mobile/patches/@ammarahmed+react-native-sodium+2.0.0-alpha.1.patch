@@ -1,0 +1,6 @@
+diff --git a/node_modules/@ammarahmed/react-native-sodium/react-native-sodium.podspec b/node_modules/@ammarahmed/react-native-sodium/react-native-sodium.podspec
+--- a/node_modules/@ammarahmed/react-native-sodium/react-native-sodium.podspec
++++ b/node_modules/@ammarahmed/react-native-sodium/react-native-sodium.podspec
+@@ -18 +18 @@
+-  s.vendored_libraries = 'libsodium/libsodium-ios/lib/libsodium.a'
++  s.vendored_frameworks = 'libsodium/Sodium.xcframework'

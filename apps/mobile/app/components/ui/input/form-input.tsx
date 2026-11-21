@@ -31,7 +31,7 @@ import {
 import isEmail from "validator/lib/isEmail";
 import isURL from "validator/lib/isURL";
 import { AppFontSize, defaultBorderRadius } from "../../../utils/size";
-import { DefaultAppStyles } from "../../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../../utils/styles";
 import AppIcon from "../AppIcon";
 import { IconButton } from "../icon-button";
 import Paragraph from "../typography/paragraph";
@@ -312,7 +312,7 @@ export function FormInput({
     flexShrink: 1,
     paddingBottom: DefaultAppStyles.GAP_VERTICAL,
     paddingTop: DefaultAppStyles.GAP_VERTICAL,
-    fontFamily: "Inter-Regular",
+    fontFamily: appBodyFont,
     ...(inputStyle as ViewStyle)
   };
 

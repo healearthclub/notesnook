@@ -38,7 +38,7 @@ import { strings } from "@notesnook/intl";
 import { useThemeEngineStore } from "@notesnook/theme";
 import { Mutex } from "async-mutex";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Linking } from "react-native";
+import { Linking, Platform } from "react-native";
 import WebView from "react-native-webview";
 import { DatabaseLogger, db } from "../../../common/database";
 import useGlobalSafeAreaInsets from "../../../hooks/use-global-safe-area-insets";
@@ -64,6 +64,7 @@ import {
 import { fluidTabsRef } from "../../../utils/global-refs";
 import { sleep } from "../../../utils/time";
 import { unlockVault } from "../../../utils/unlock-vault";
+import { rememberOpenedNote } from "../../../features/notes/recent-notes";
 import { onNoteCreated } from "../../notes/common";
 import Commands from "./commands";
 import { SessionHistory } from "./session-history";
@@ -269,6 +270,10 @@ export const useEditor = (
     }: SavePayload) => {
       if (currentNotes.current[id as string]?.readonly || readonly) return;
 
+      // A new, empty editor is not a note yet. In particular, an initial
+      // empty title event must not start a save that can never succeed.
+      if (!id && !title && isContentInvalid(data)) return;
+
       if (sourceNoteId && id && sourceNoteId !== id) {
         DatabaseLogger.error(
           new Error(
@@ -278,6 +283,7 @@ export const useEditor = (
         return;
       }
 
+      let saveTimer: ReturnType<typeof setTimeout> | undefined;
       try {
         if (id && !(await db.notes?.note(id))) {
           if (useTabStore.getState().getNoteIdForTab(tabId) === id) {
@@ -363,7 +369,7 @@ export const useEditor = (
           );
         }, 50);
 
-        const saveTimer = setTimeout(() => {
+        saveTimer = setTimeout(() => {
           DatabaseLogger.log(`Note save timeout: ${id}...`);
           ToastManager.show({
             message: strings.savingNoteTakingTooLong(),
@@ -374,7 +380,10 @@ export const useEditor = (
 
         if (!locked) {
           DatabaseLogger.log(`Saving note: ${id}...`);
-          id = await db.notes?.add({ ...noteData });
+          id = await db.notes?.add(
+            { ...noteData },
+            { generateTitle: Platform.OS !== "ios" }
+          );
           saved = true;
           DatabaseLogger.log(`Note saved: ${id}...`);
 
@@ -385,6 +394,7 @@ export const useEditor = (
           }
 
           if (!note && id) {
+            rememberOpenedNote(id);
             editorSessionHistory.newSession(id);
             useTabStore.getState().updateTab(tabId, {
               session: {
@@ -439,10 +449,10 @@ export const useEditor = (
           }
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           if (typeof noteData.title === "string") {
-            await db.notes.add({
-              title: noteData.title,
-              id: noteData.id
-            });
+            await db.notes.add(
+              { title: noteData.title, id: noteData.id },
+              { generateTitle: Platform.OS !== "ios" }
+            );
           }
 
           noteData.contentId = note?.contentId;
@@ -512,6 +522,10 @@ export const useEditor = (
       } catch (e) {
         console.error(e);
         DatabaseLogger.error(e as Error);
+      } finally {
+        // Failed/rejected writes must not leave a warning scheduled after a
+        // later edit has already saved successfully.
+        if (saveTimer !== undefined) clearTimeout(saveTimer);
       }
     },
     [commands, editorSessionHistory, postMessage, readonly, reset]
@@ -622,6 +636,7 @@ export const useEditor = (
           }
 
           const item = event.item;
+          if (!event.refresh) rememberOpenedNote(item.id);
 
           const currentTab = useTabStore
             .getState()

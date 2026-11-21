@@ -100,7 +100,11 @@ export const NotebookHeader = ({
           </View>
         ) : null}
 
-        <AppIcon name="notebook" size={AppFontSize.xxl} />
+        <AppIcon
+          name="folder-outline"
+          size={AppFontSize.xxl}
+          color={colors.primary.accent}
+        />
 
         <View>
           <Heading size={AppFontSize.lg}>{notebook.title}</Heading>

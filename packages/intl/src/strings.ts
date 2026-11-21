@@ -3282,5 +3282,62 @@ Continue without attachments?`,
   lastBackupOn: (date: string, type: "full" | "partial") =>
     type === "full"
       ? t`Last full backup: ${date}`
-      : t`Last partial backup: ${date}`
+      : t`Last partial backup: ${date}`,
+  addFolder: () => t`Add folder`,
+  addToFolder: () => t`Add to folder`,
+  cannotMoveFoldersHere: () =>
+    t`You cannot move the selected folder(s) here`,
+  clearDefaultFolder: () => t`Clear default folder`,
+  clearDefaultFolderDesc: () => t`Newly created notes will be uncategorized`,
+  defaultFolderCleared: () => t`Default folder cleared`,
+  editFolder: () => t`Edit folder`,
+  enterFolderDescription: () => t`Enter folder description`,
+  enterFolderTitle: () => t`Enter folder title`,
+  filterFolders: () => t`Filter folders...`,
+  moveFolder: (count: number, title: string) =>
+    plural(count, {
+      one: `Moving ${title}`,
+      other: `Moving # folders`
+    }),
+  moveFolderFix: () => t`Move folder`,
+  moveFolders: (count: number) =>
+    plural(count, { one: "Move folder", other: `Move # folders` }),
+  moveFoldersConfirm: (count: number, selectedFolderTitle: string) =>
+    plural(count, {
+      one: `Are you sure you want to move this folder to ${selectedFolderTitle}?`,
+      other: `Are you sure you want to move these # folders to ${selectedFolderTitle}?`
+    }),
+  newFolder: () => t`New folder`,
+  noFoldersSelectedToMove: () => t`No folders selected to move`,
+  folderAdded: () => t`Folder added`,
+  folderRestored: () => t`Folder restored`,
+  folderRestoredFromTrash: () => t`Folder restored from trash`,
+  folders: () => t`Folders`,
+  foldersYourFavorites: (count: number) =>
+    plural(count, {
+      one: `folder, your favorite`,
+      other: `folders, your favorites`
+    }),
+  permanentlyDeletedFolder: () => t`Folder permanently deleted`,
+  removeFromFolder: () => t`Remove from folder`,
+  restoreFolder: () => t`Restore folder`,
+  searchForAFolder: () => t`Search for a folder`,
+  searchFolders: () => t`Search folders`,
+  subFolders: () => t`Subfolders`,
+  unlinkFolder: () => t`Unlink folder`,
+  viewAllLinkedFolders: () => t`View all linked folders`,
+  noFolders: () => t`No folders`,
+  selectFolder: () => t`Select folder`,
+  deleteFolders: (count: number) =>
+    plural(count, { one: "Delete folder", other: `Delete # folders` }),
+  trashFoldersWithNotes: (count: number) =>
+    plural(count, {
+      one: `Move all notes in this folder to trash`,
+      other: `Move all notes in these folders to trash`
+    }),
+  foldersMovedToTrash: (count: number) =>
+    plural(count, {
+      one: `Folder moved to trash`,
+      other: `# folders moved to trash`
+    })
 };

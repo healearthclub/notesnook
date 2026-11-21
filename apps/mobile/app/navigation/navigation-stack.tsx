@@ -20,6 +20,7 @@ import { useThemeColors } from "@notesnook/theme";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import * as React from "react";
+import { Platform } from "react-native";
 import { hideAllTooltips } from "../hooks/use-tooltip";
 import SettingsService from "../services/settings";
 import useNavigationStore, {
@@ -293,7 +294,8 @@ AppNavigation.displayName = "AppNavigation";
 
 let Intro: any = null;
 let Auth: any = null;
-let FluidPanelsView: any = null;
+let MainScreen: any = null;
+let SendNote: any = null;
 let LinkNotebooks: any = null;
 let MoveNotebook: any = null;
 let MoveNotes: any = null;
@@ -412,10 +414,8 @@ export const RootNavigation = () => {
         <RootStack.Screen
           name="FluidPanelsView"
           getComponent={() => {
-            FluidPanelsView =
-              FluidPanelsView ||
-              require("../navigation/fluid-panels-view").default;
-            return FluidPanelsView;
+            MainScreen = MainScreen || require("./main-tabs").default;
+            return MainScreen;
           }}
           initialParams={{
             initialPage:
@@ -427,7 +427,31 @@ export const RootNavigation = () => {
         />
 
         <RootStack.Screen
+          name="SendNote"
+          options={{
+            presentation: "fullScreenModal",
+            animation: "slide_from_bottom"
+          }}
+          getComponent={() => {
+            SendNote = SendNote || require("../screens/send-note").default;
+            return SendNote;
+          }}
+        />
+
+        <RootStack.Screen
           name="LinkNotebooks"
+          options={({ route }) => {
+            const params = route.params as
+              | RouteParams["LinkNotebooks"]
+              | undefined;
+            return Platform.OS === "ios" && params?.website
+              ? {
+                  presentation: "transparentModal",
+                  animation: "none",
+                  gestureEnabled: false
+                }
+              : {};
+          }}
           getComponent={() => {
             LinkNotebooks =
               LinkNotebooks || require("../screens/link-notebooks").default;

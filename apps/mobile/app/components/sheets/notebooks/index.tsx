@@ -160,7 +160,7 @@ export const Notebooks = (props: {
         }}
       >
         <Paragraph size={AppFontSize.xs} color={colors.secondary.paragraph}>
-          {strings.subNotebooks()}
+          {strings.subFolders()}
         </Paragraph>
 
         <IconButton
@@ -170,6 +170,7 @@ export const Notebooks = (props: {
             height: 30
           }}
           name="plus"
+          accessibilityLabel={strings.newFolder()}
           onPress={async () => {
             const notebooksFeature = await isFeatureAvailable("notebooks");
             if (!notebooksFeature.isAllowed) {
@@ -200,7 +201,7 @@ export const Notebooks = (props: {
           }}
         >
           <Paragraph style={{ textAlign: "center" }}>
-            {strings.emptyPlaceholders("notebook")}
+            {strings.noFolders()}
           </Paragraph>
         </View>
       ) : (

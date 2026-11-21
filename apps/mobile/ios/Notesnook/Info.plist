@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>AVInitialRouteSharingPolicy</key>
+	<string>LongFormAudio</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>com.transistorsoft.fetch</string>
@@ -22,7 +24,7 @@
 			<string>Owner</string>
 			<key>LSItemContentTypes</key>
 			<array>
-				<string>org.streetwriters.notesnook.nnbackup</string>
+				<string>org.healearth.ohai.nnbackup</string>
 			</array>
 		</dict>
 	</array>
@@ -80,17 +82,19 @@
 		<true/>
 	</dict>
 	<key>NSCameraUsageDescription</key>
-	<string>Take a picture and add it to your note.</string>
+	<string>Take photos in Camera or add them to notes.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>$(PRODUCT_NAME) requires FaceID access for App Lock</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Only required by library- not requested in application</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Add photos from gallery to your note.</string>
+	<string>View your Camera Roll or add photos to notes.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Save pictures taken in Camera to your photo library.</string>
 	<key>RCTNewArchEnabled</key>
 	<true/>
 	<key>ReactNativeQuickSQLite_AppGroup</key>
-	<string>group.org.streetwriters.notesnook</string>
+	<string>group.org.healearth.ohai</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>Inter-Italic.ttf</string>
@@ -109,6 +113,7 @@
 	<array>
 		<string>fetch</string>
 		<string>processing</string>
+		<string>audio</string>
 	</array>
 	<key>UIFileSharingEnabled</key>
 	<true/>
@@ -143,7 +148,7 @@
 			<key>UTTypeIconFiles</key>
 			<array/>
 			<key>UTTypeIdentifier</key>
-			<string>org.streetwriters.notesnook.nnbackup</string>
+			<string>org.healearth.ohai.nnbackup</string>
 			<key>UTTypeTagSpecification</key>
 			<dict>
 				<key>public.filename-extension</key>
@@ -158,7 +163,7 @@
 		</dict>
 	</array>
 	<key>appGroupId</key>
-	<string>group.org.streetwriters.notesnook</string>
+	<string>group.org.healearth.ohai</string>
 	<key>disableMMKVBackup</key>
 	<true/>
 </dict>

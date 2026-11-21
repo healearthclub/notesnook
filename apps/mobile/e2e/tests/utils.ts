@@ -218,6 +218,19 @@ class TestBuilder {
     });
   }
 
+  openSettings() {
+    return this.addStep(async () => {
+      if (device.getPlatform() === "ios") {
+        await Tests.fromId("main-tab-profile").waitAndTap();
+        await Tests.fromId("profile-setting-cog-outline").waitAndTap();
+      } else {
+        await Tests.openSideMenu();
+        await Tests.fromId("sidemenu-settings-icon").waitAndTap();
+        await Tests.fromText("Settings").waitAndTap();
+      }
+    });
+  }
+
   prepare() {
     return this.addStep(async () => {
       await Tests.prepare();

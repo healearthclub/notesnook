@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import React from "react";
 import DelayLayout from "../../components/delay-layout";
 import { Header } from "../../components/header";
+import { NotesListLayout } from "../../features/notes/list-layout";
 import List from "../../components/list";
 import SelectionHeader from "../../components/selection-header";
 import { useNavigationFocus } from "../../hooks/use-navigation-focus";
@@ -50,40 +51,45 @@ export const Favorites = ({
 
   return (
     <>
-      <Header
-        renderedInRoute={route.name}
-        title={strings.routes[route.name]()}
-        canGoBack={false}
-        hasSearch={true}
-        id={route.name}
-        onSearch={() => {
-          Navigation.push("Search", {
-            placeholder: strings.searchInRoute(route.name),
-            type: "note",
-            title: route.name,
-            route: route.name,
-            items: db.notes.favorites
-          });
-        }}
-      />
-      <DelayLayout wait={loading}>
-        <List
-          data={favorites}
-          dataType="note"
-          groupType="favorites"
-          onRefresh={() => {
-            refresh();
-          }}
-          renderedInRoute="Favorites"
-          loading={loading}
-          placeholder={{
-            title: strings.yourFavorites(),
-            paragraph: strings.favoritesEmpty(),
-            loading: strings.loadingFavorites()
-          }}
-          headerTitle={strings.routes.Favorites()}
-        />
-      </DelayLayout>
+      <NotesListLayout
+        header={
+          <Header
+            renderedInRoute={route.name}
+            title={strings.routes[route.name]()}
+            canGoBack={false}
+            hasSearch={true}
+            id={route.name}
+            onSearch={() => {
+              Navigation.push("Search", {
+                placeholder: strings.searchInRoute(route.name),
+                type: "note",
+                title: route.name,
+                route: route.name,
+                items: db.notes.favorites
+              });
+            }}
+          />
+        }
+      >
+        <DelayLayout wait={loading}>
+          <List
+            data={favorites}
+            dataType="note"
+            groupType="favorites"
+            onRefresh={() => {
+              refresh();
+            }}
+            renderedInRoute="Favorites"
+            loading={loading}
+            placeholder={{
+              title: strings.yourFavorites(),
+              paragraph: strings.favoritesEmpty(),
+              loading: strings.loadingFavorites()
+            }}
+            headerTitle={strings.routes.Favorites()}
+          />
+        </DelayLayout>
+      </NotesListLayout>
 
       <SelectionHeader id={route.name} items={favorites} type="note" />
     </>

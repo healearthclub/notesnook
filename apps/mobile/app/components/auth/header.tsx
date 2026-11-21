@@ -26,7 +26,10 @@ import { hideAuth } from "./common";
 import { AuthParams } from "../../stores/use-navigation-store";
 import { strings } from "@notesnook/intl";
 import { presentDialog } from "../dialog/functions";
-export const AuthHeader = (props: { welcome?: boolean }) => {
+export const AuthHeader = (props: {
+  welcome?: boolean;
+  foregroundColor?: string;
+}) => {
   const { colors } = useThemeColors();
   const route = useRoute();
 
@@ -52,12 +55,13 @@ export const AuthHeader = (props: { welcome?: boolean }) => {
             onPress={() => {
               hideAuth((route.params as AuthParams)?.context);
             }}
-            color={colors.primary.paragraph}
+            color={props.foregroundColor ?? colors.primary.paragraph}
           />
         )}
 
         {!props.welcome ? null : (
           <Button
+            testID="auth-use-offline"
             title={strings.skipAndGoToApp()}
             onPress={() => {
               presentDialog({
@@ -68,6 +72,11 @@ export const AuthHeader = (props: { welcome?: boolean }) => {
               });
             }}
             type="plain"
+            buttonType={
+              props.foregroundColor
+                ? { text: props.foregroundColor }
+                : undefined
+            }
             height={25}
             style={{
               paddingHorizontal: 6

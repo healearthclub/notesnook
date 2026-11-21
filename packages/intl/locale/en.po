@@ -134,6 +134,10 @@ msgstr "{count, plural, one {Are you sure you want to delete this reminder?} oth
 msgid "{count, plural, one {Are you sure you want to delete this tag?} other {Are you sure you to delete these tags?}}"
 msgstr "{count, plural, one {Are you sure you want to delete this tag?} other {Are you sure you to delete these tags?}}"
 
+#: src/strings.ts:3306
+msgid "{count, plural, one {Are you sure you want to move this folder to {selectedFolderTitle}?} other {Are you sure you want to move these # folders to {selectedFolderTitle}?}}"
+msgstr "{count, plural, one {Are you sure you want to move this folder to {selectedFolderTitle}?} other {Are you sure you want to move these # folders to {selectedFolderTitle}?}}"
+
 #: src/strings.ts:787
 msgid "{count, plural, one {Are you sure you want to move this notebook to {selectedNotebookTitle}?} other {Are you sure you want to move these # notebooks {selectedNotebookTitle}?}}"
 msgstr "{count, plural, one {Are you sure you want to move this notebook to {selectedNotebookTitle}?} other {Are you sure you want to move these # notebooks {selectedNotebookTitle}?}}"
@@ -177,6 +181,10 @@ msgstr "{count, plural, one {Delete attachment} other {Delete # attachments}}"
 #: generated/do-actions.ts:28
 msgid "{count, plural, one {Delete color} other {Delete # colors}}"
 msgstr "{count, plural, one {Delete color} other {Delete # colors}}"
+
+#: src/strings.ts:3332
+msgid "{count, plural, one {Delete folder} other {Delete # folders}}"
+msgstr "{count, plural, one {Delete folder} other {Delete # folders}}"
 
 #: generated/do-actions.ts:12
 #: generated/do-actions.ts:59
@@ -255,6 +263,14 @@ msgstr "{count, plural, one {Edit tag} other {Edit # tags}}"
 msgid "{count, plural, one {Failed to download attachment} other {Failed to download # attachments}}"
 msgstr "{count, plural, one {Failed to download attachment} other {Failed to download # attachments}}"
 
+#: src/strings.ts:3339
+msgid "{count, plural, one {Folder moved to trash} other {# folders moved to trash}}"
+msgstr "{count, plural, one {Folder moved to trash} other {# folders moved to trash}}"
+
+#: src/strings.ts:3317
+msgid "{count, plural, one {folder, your favorite} other {folders, your favorites}}"
+msgstr "{count, plural, one {folder, your favorite} other {folders, your favorites}}"
+
 #: generated/action-errors.ts:34
 msgid "{count, plural, one {Item could not be published} other {# items could not be published}}"
 msgstr "{count, plural, one {Item could not be published} other {# items could not be published}}"
@@ -301,13 +317,25 @@ msgstr "{count, plural, one {Item restored} other {# items restored}}"
 msgid "{count, plural, one {Item unpublished} other {# items unpublished}}"
 msgstr "{count, plural, one {Item unpublished} other {# items unpublished}}"
 
+#: src/strings.ts:3334
+msgid "{count, plural, one {Move all notes in this folder to trash} other {Move all notes in these folders to trash}}"
+msgstr "{count, plural, one {Move all notes in this folder to trash} other {Move all notes in these folders to trash}}"
+
 #: src/strings.ts:2204
 msgid "{count, plural, one {Move all notes in this notebook to trash} other {Move all notes in these notebooks to trash}}"
 msgstr "{count, plural, one {Move all notes in this notebook to trash} other {Move all notes in these notebooks to trash}}"
 
+#: src/strings.ts:3304
+msgid "{count, plural, one {Move folder} other {Move # folders}}"
+msgstr "{count, plural, one {Move folder} other {Move # folders}}"
+
 #: src/strings.ts:785
 msgid "{count, plural, one {Move notebook} other {Move # notebooks}}"
 msgstr "{count, plural, one {Move notebook} other {Move # notebooks}}"
+
+#: src/strings.ts:3298
+msgid "{count, plural, one {Moving {title}} other {Moving # folders}}"
+msgstr "{count, plural, one {Moving {title}} other {Moving # folders}}"
 
 #: src/strings.ts:433
 msgid "{count, plural, one {Moving {title}} other {Moving # notebooks}}"
@@ -868,6 +896,10 @@ msgstr "Add color"
 msgid "Add discount"
 msgstr "Add discount"
 
+#: src/strings.ts:3286
+msgid "Add folder"
+msgstr "Add folder"
+
 #: src/strings.ts:3241
 msgid "Add image"
 msgstr "Add image"
@@ -903,6 +935,10 @@ msgstr "Add tags to multiple notes at once"
 #: src/strings.ts:2041
 msgid "Add to dictionary"
 msgstr "Add to dictionary"
+
+#: src/strings.ts:3287
+msgid "Add to folder"
+msgstr "Add to folder"
 
 #: src/strings.ts:2396
 msgid "Add to home"
@@ -1944,6 +1980,10 @@ msgstr "Clear current line"
 msgid "Clear data & reset account"
 msgstr "Clear data & reset account"
 
+#: src/strings.ts:3290
+msgid "Clear default folder"
+msgstr "Clear default folder"
+
 #: src/strings.ts:1043
 msgid "Clear default notebook"
 msgstr "Clear default notebook"
@@ -2650,6 +2690,10 @@ msgstr "Decryption failed"
 msgid "Default"
 msgstr "Default"
 
+#: src/strings.ts:3292
+msgid "Default folder cleared"
+msgstr "Default folder cleared"
+
 #: src/strings.ts:1059
 msgid "Default font family"
 msgstr "Default font family"
@@ -3008,6 +3052,10 @@ msgstr "Edit"
 msgid "Edit creation date"
 msgstr "Edit creation date"
 
+#: src/strings.ts:3293
+msgid "Edit folder"
+msgstr "Edit folder"
+
 #: src/strings.ts:474
 msgid "Edit internal link"
 msgstr "Edit internal link"
@@ -3200,6 +3248,14 @@ msgstr "Enter email address"
 #: src/strings.ts:2165
 msgid "Enter embed source URL"
 msgstr "Enter embed source URL"
+
+#: src/strings.ts:3294
+msgid "Enter folder description"
+msgstr "Enter folder description"
+
+#: src/strings.ts:3295
+msgid "Enter folder title"
+msgstr "Enter folder title"
 
 #: src/strings.ts:1212
 msgid "Enter full name"
@@ -3680,6 +3736,10 @@ msgstr "files totaling {storage}"
 msgid "Filter attachments by filename, type or hash"
 msgstr "Filter attachments by filename, type or hash"
 
+#: src/strings.ts:3296
+msgid "Filter folders..."
+msgstr "Filter folders..."
+
 #: src/strings.ts:1679
 msgid "Filter languages"
 msgstr "Filter languages"
@@ -3711,6 +3771,26 @@ msgstr "Focus mode"
 #: src/strings.ts:3042
 msgid "Focused on privacy"
 msgstr "Focused on privacy"
+
+#: src/strings.ts:3312
+msgid "Folder added"
+msgstr "Folder added"
+
+#: src/strings.ts:3321
+msgid "Folder permanently deleted"
+msgstr "Folder permanently deleted"
+
+#: src/strings.ts:3313
+msgid "Folder restored"
+msgstr "Folder restored"
+
+#: src/strings.ts:3314
+msgid "Folder restored from trash"
+msgstr "Folder restored from trash"
+
+#: src/strings.ts:3315
+msgid "Folders"
+msgstr "Folders"
 
 #: src/strings.ts:1965
 msgid "Follow"
@@ -5045,6 +5125,10 @@ msgstr "Move column left"
 msgid "Move column right"
 msgstr "Move column right"
 
+#: src/strings.ts:3302
+msgid "Move folder"
+msgstr "Move folder"
+
 #: src/strings.ts:3262
 msgid "Move line down"
 msgstr "Move line down"
@@ -5137,6 +5221,10 @@ msgstr "New color"
 msgid "New Email"
 msgstr "New Email"
 
+#: src/strings.ts:3310
+msgid "New folder"
+msgstr "New folder"
+
 #: src/strings.ts:1055
 msgid "New lines will be double spaced (old ones won't be affected)."
 msgstr "New lines will be double spaced (old ones won't be affected)."
@@ -5182,6 +5270,7 @@ msgid "Newest - oldest"
 msgstr "Newest - oldest"
 
 #: src/strings.ts:1044
+#: src/strings.ts:3291
 msgid "Newly created notes will be uncategorized"
 msgstr "Newly created notes will be uncategorized"
 
@@ -5252,6 +5341,14 @@ msgstr "No encryption key found"
 #: src/strings.ts:2532
 msgid "No failed inbox items"
 msgstr "No failed inbox items"
+
+#: src/strings.ts:3329
+msgid "No folders"
+msgstr "No folders"
+
+#: src/strings.ts:3311
+msgid "No folders selected to move"
+msgstr "No folders selected to move"
 
 #: src/strings.ts:1545
 msgid "No headings found"
@@ -6561,6 +6658,10 @@ msgstr "Remove formatting in selection"
 msgid "Remove from all"
 msgstr "Remove from all"
 
+#: src/strings.ts:3322
+msgid "Remove from folder"
+msgstr "Remove from folder"
+
 #: src/strings.ts:827
 msgid "Remove from notebook"
 msgstr "Remove from notebook"
@@ -6725,6 +6826,10 @@ msgstr "Restore backup?"
 #: src/strings.ts:813
 msgid "Restore failed"
 msgstr "Restore failed"
+
+#: src/strings.ts:3323
+msgid "Restore folder"
+msgstr "Restore folder"
 
 #: src/strings.ts:1491
 msgid "Restore from files"
@@ -6962,6 +7067,14 @@ msgstr "Search a note"
 msgid "Search a note to link to"
 msgstr "Search a note to link to"
 
+#: src/strings.ts:3325
+msgid "Search folders"
+msgstr "Search folders"
+
+#: src/strings.ts:3324
+msgid "Search for a folder"
+msgstr "Search for a folder"
+
 #: src/strings.ts:2658
 msgid "Search for a note"
 msgstr "Search for a note"
@@ -7125,6 +7238,10 @@ msgstr "Select date"
 #: src/strings.ts:298
 msgid "Select day of the week to repeat the reminder."
 msgstr "Select day of the week to repeat the reminder."
+
+#: src/strings.ts:3330
+msgid "Select folder"
+msgstr "Select folder"
 
 #: src/strings.ts:1487
 msgid "Select folder where Notesnook backup files are stored to view and restore them from the app"
@@ -7612,6 +7729,10 @@ msgstr "Strikethrough"
 #: src/strings.ts:2815
 msgid "Sub notebooks"
 msgstr "Sub notebooks"
+
+#: src/strings.ts:3326
+msgid "Subfolders"
+msgstr "Subfolders"
 
 #: src/strings.ts:3211
 msgid "Subgroup {number}"
@@ -8461,6 +8582,10 @@ msgstr "Unlimited notebooks*"
 msgid "Unlimited storage"
 msgstr "Unlimited storage"
 
+#: src/strings.ts:3327
+msgid "Unlink folder"
+msgstr "Unlink folder"
+
 #: src/strings.ts:853
 msgid "Unlink from all"
 msgstr "Unlink from all"
@@ -8841,6 +8966,10 @@ msgstr "Videos"
 msgid "View all limits"
 msgstr "View all limits"
 
+#: src/strings.ts:3328
+msgid "View all linked folders"
+msgstr "View all linked folders"
+
 #: src/strings.ts:519
 msgid "View all linked notebooks"
 msgstr "View all linked notebooks"
@@ -9215,6 +9344,10 @@ msgstr "You can use fallback 2FA method incase you are unable to login via prima
 #: src/strings.ts:1342
 msgid "You can view & restore older versions of any note by going to its properties -> History."
 msgstr "You can view & restore older versions of any note by going to its properties -> History."
+
+#: src/strings.ts:3289
+msgid "You cannot move the selected folder(s) here"
+msgstr "You cannot move the selected folder(s) here"
 
 #: src/strings.ts:3198
 msgid "You cannot move the selected notebook(s) here"

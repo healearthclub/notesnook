@@ -71,7 +71,7 @@ export default function Notebooks({ note, close, full }) {
       }}
     >
       <Icon
-        name="book-outline"
+        name="folder-outline"
         color={colors.primary.accent}
         size={AppFontSize.sm}
         style={{
@@ -109,7 +109,7 @@ export default function Notebooks({ note, close, full }) {
 
         {noteNotebooks.length > 1 && !full ? (
           <Button
-            title={strings.viewAllLinkedNotebooks()}
+            title={strings.viewAllLinkedFolders()}
             fontSize={AppFontSize.xs}
             style={{
               alignSelf: "flex-end",

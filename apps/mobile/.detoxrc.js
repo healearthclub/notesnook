@@ -15,14 +15,14 @@ module.exports = {
       binaryPath:
         "ios/build/Build/Products/Debug-iphonesimulator/Notesnook.app",
       build:
-        "xcodebuild -workspace ios/Notesnook.xcworkspace -scheme YOUR_APP -configuration Debug -sdk iphonesimulator -derivedDataPath ios/build"
+        "xcodebuild -workspace ios/Notesnook.xcworkspace -scheme Notesnook -configuration Debug -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' -derivedDataPath ios/build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM= ONLY_ACTIVE_ARCH=YES"
     },
     "ios.release": {
       type: "ios.app",
       binaryPath:
         "ios/build/Build/Products/Release-iphonesimulator/Notesnook.app",
       build:
-        "xcodebuild -workspace ios/Notesnook.xcworkspace -scheme YOUR_APP -configuration Release -sdk iphonesimulator -derivedDataPath ios/build"
+        "xcodebuild -workspace ios/Notesnook.xcworkspace -scheme Notesnook -configuration Release -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17 Pro Max' -derivedDataPath ios/build CODE_SIGNING_ALLOWED=YES CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM= ONLY_ACTIVE_ARCH=YES"
     },
     "android.debug": {
       type: "android.apk",

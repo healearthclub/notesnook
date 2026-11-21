@@ -103,3 +103,64 @@
   margin: 0.1rem 0.1rem;
   background-color: var(--nn_primary_border);
 }
+
+
+.keyboardControls {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.formattingRow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.keyboardTools {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.keyboardAction,
+.sendRow {
+  display: none;
+}
+
+:global(.ios-editor-keyboard) .keyboardControls {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 4px 8px 2px;
+  background: var(--nn_primary_background);
+}
+
+:global(.ios-editor-keyboard) .formattingRow {
+  gap: 8px;
+}
+
+:global(.ios-editor-keyboard) .keyboardControls .keyboardTools {
+  box-sizing: border-box;
+  background-color: var(--nn_secondary_background);
+  border: 1px solid var(--nn_primary_border);
+  border-radius: 999px;
+  padding-inline: 4px;
+  scrollbar-width: none;
+}
+
+:global(.ios-editor-keyboard) .sendRow {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 2px;
+}
+
+:global(.ios-editor-keyboard) .keyboardAction {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid var(--nn_primary_border);
+  border-radius: 999px;
+}

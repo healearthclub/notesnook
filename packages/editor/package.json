@@ -125,7 +125,7 @@
     "postbuild": "node ./scripts/postbuild.mjs",
     "start": "npm run watch",
     "prepublishOnly": "npm run build && npm run test",
-    "postinstall": "patch-package",
+    "postinstall": "patch-package --error-on-fail",
     "build": "node ../../scripts/build.mjs",
     "watch": "nodemon -V --watch src --watch styles/styles.css -i src/extensions/code-block/languages/index.ts --ext ts,tsx,css --exec npm run build"
   },

@@ -35,7 +35,7 @@ import Seperator from "../../ui/seperator";
 import Heading from "../../ui/typography/heading";
 import Paragraph from "../../ui/typography/paragraph";
 import { strings } from "@notesnook/intl";
-import { DefaultAppStyles } from "../../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../../utils/styles";
 import Config from "react-native-config";
 import { eCloseSheet } from "../../../utils/events";
 
@@ -194,7 +194,7 @@ Github Release: ${Config.GITHUB_RELEASE === "true" ? "Yes" : "No"}`,
               borderColor: colors.primary.border,
               borderRadius: defaultBorderRadius,
               padding: DefaultAppStyles.GAP,
-              fontFamily: "Inter-Regular",
+              fontFamily: appBodyFont,
               marginBottom: DefaultAppStyles.GAP_VERTICAL,
               fontSize: AppFontSize.md,
               color: colors.primary.heading
@@ -227,7 +227,7 @@ Github Release: ${Config.GITHUB_RELEASE === "true" ? "Yes" : "No"}`,
               borderColor: colors.primary.border,
               borderRadius: defaultBorderRadius,
               padding: DefaultAppStyles.GAP,
-              fontFamily: "Inter-Regular",
+              fontFamily: appBodyFont,
               maxHeight: 200,
               fontSize: AppFontSize.sm,
               marginBottom: 2.5,

@@ -17,7 +17,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-import { TestBuilder } from "./utils";
+import { notesnook } from "../test.ids";
+import { TestBuilder, Tests } from "./utils";
 
 describe("APP LAUNCH AND NAVIGATION", () => {
   it("App should launch successfully & hide welcome screen", async () => {
@@ -31,12 +32,19 @@ describe("APP LAUNCH AND NAVIGATION", () => {
       .navigate("Reminders")
       .navigate("Monographs")
       .navigate("Trash")
-      .openSideMenu()
-      .waitAndTapById("sidemenu-settings-icon")
-      .wait(500)
-      .waitAndTapByText("Settings")
-      .isVisibleByText("Settings")
-      .pressBack(1)
+      .openSettings()
+      .isVisibleById("settings-list")
+      .addStep(async () => {
+        if (device.getPlatform() === "ios") {
+          await Tests.fromId(
+            notesnook.ids.default.header.buttons.left
+          ).waitAndTap();
+          await Tests.fromId("main-tab-notes").waitAndTap();
+          await Tests.openSideMenu();
+        } else {
+          await device.pressBack();
+        }
+      })
       .tapById("tab-notebooks")
       .isVisibleByText("No notebooks")
       .tapById("tab-tags")

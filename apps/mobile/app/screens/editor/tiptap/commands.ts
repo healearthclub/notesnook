@@ -206,8 +206,8 @@ class Commands {
     return this.sendCommand("handleBack");
   };
 
-  keyboardShown = async (keyboardShown: boolean) => {
-    return this.sendCommand("keyboardShown", keyboardShown);
+  keyboardShown = async (keyboardShown: boolean, showDone = false) => {
+    return this.sendCommand("keyboardShown", keyboardShown, showDone);
   };
 
   getTableOfContents = async () => {

@@ -4,12 +4,14 @@
 <dict>
 	<key>provisioningProfiles</key>
 	<dict>
-		<key>org.streetwriters.notesnook</key>
-		<string>Notesnook 2026</string>
-        <key>org.streetwriters.notesnook.notewidget</key>
-		<string>Notesnook Note Widget 2026</string>
-        <key>org.streetwriters.notesnook.share</key>
-		<string>Notesnook Share 2026</string>
+		<key>org.healearth.ohai</key>
+		<string></string>
+		<key>org.healearth.ohai.notewidget</key>
+		<string></string>
+		<key>org.healearth.ohai.share</key>
+		<string></string>
 	</dict>
+	<key>teamID</key>
+	<string></string>
 </dict>
 </plist>

@@ -1,0 +1,101 @@
+{
+  "reviewDate": "2026-11-18",
+  "status": "Source inspection only; no hardware or production validation",
+  "repositories": {
+    "Roku-Client": {
+      "head": "fac595c1cfbb4c37a428e26a9cfa10103cd6683d",
+      "files": [
+        {
+          "path": "manifest",
+          "sha256": "cd615f57721998b36ccb82b710b5d0863d8aa88f61eba8a155b201e8e60eac46",
+          "gitStatus": ""
+        },
+        {
+          "path": "package.json",
+          "sha256": "c186c125ab825938be17b03532ef1549bc034bcc73d1fc0ee23c53eaffaec954",
+          "gitStatus": ""
+        },
+        {
+          "path": "README.md",
+          "sha256": "b98ea74258bb328fbbe63338934a3070787a3cffcbe622b1d828ca7bfbe84f13",
+          "gitStatus": ""
+        },
+        {
+          "path": "source/main.brs",
+          "sha256": "1041c754bf92dfd24d01ea74f002095802cc568185b03f95bda2137fccea5c3f",
+          "gitStatus": ""
+        },
+        {
+          "path": "components/AuthScene.brs",
+          "sha256": "798f35578737d3744adb14db05404b699784b6acc0fdf5ac3282bfc628f426f7",
+          "gitStatus": ""
+        },
+        {
+          "path": "components/MediaLibrary.brs",
+          "sha256": "2d75676a087d5a7be66a630c07da21db12b8cab3a9c08c430c762edabfb944ba",
+          "gitStatus": ""
+        },
+        {
+          "path": "components/MediaLibrary.xml",
+          "sha256": "5d674471949e7e54df83b5d7af6d51d93f43760507e459137ab43a8380b2bfac",
+          "gitStatus": ""
+        },
+        {
+          "path": "components/MediaTask.brs",
+          "sha256": "5da55dab73cab06a5546e34dd8eab06fb184d0a9f2e35fe6faba7ee781478e8c",
+          "gitStatus": ""
+        },
+        {
+          "path": "components/MediaTask.xml",
+          "sha256": "787aedd8c0b7ce70340a03d82e20727b3301207a1ed426f24cf55e6c55b9b3f4",
+          "gitStatus": ""
+        }
+      ]
+    },
+    "notesnook": {
+      "head": "920320601b011ba889e2b55524471505206884c4",
+      "files": [
+        {
+          "path": "docs/ios-play-on-device.md",
+          "sha256": "37b4e6236b9cabb8778c8eab477031c205bfa8ad66eff43aab5629b5dcd90dff",
+          "gitStatus": "?? docs/ios-play-on-device.md"
+        },
+        {
+          "path": "apps/mobile/app/features/playback/play-on-device.tsx",
+          "sha256": "d1f5b7ec06805138212cdc24ed0aef5a2caa5c7f58d3a5c44ea229f5e488497b",
+          "gitStatus": "?? apps/mobile/app/features/playback/play-on-device.tsx"
+        },
+        {
+          "path": "apps/mobile/app/features/playback/audio-output.ts",
+          "sha256": "5bf24375661d258d6854aa0ff77c3dfddf3439d89f0c56c04150159c1dc5d587",
+          "gitStatus": "?? apps/mobile/app/features/playback/audio-output.ts"
+        },
+        {
+          "path": "apps/mobile/app/features/login/google-session.ts",
+          "sha256": "ea20375593f39fe9a95a3811af09d370d863312221c5b190e98c08bd73701372",
+          "gitStatus": "M apps/mobile/app/features/login/google-session.ts"
+        }
+      ]
+    },
+    "heal-earth-club": {
+      "head": "8e4112e8b1f981f6f0d607e72be9f1a700a5b0d1",
+      "files": [
+        {
+          "path": "lib/roku-auth.ts",
+          "sha256": "04d275a75abbad04ce31f82d998cd16812d4337350cc83bce58193563eb172df",
+          "gitStatus": "M lib/roku-auth.ts"
+        },
+        {
+          "path": "lib/roku-media.ts",
+          "sha256": "9fc39c561c307e4589e4bd47168a621696819b18042251263bddcda7f6f3d329",
+          "gitStatus": "M lib/roku-media.ts"
+        },
+        {
+          "path": "docs/api-feature-discovery.md",
+          "sha256": "a689a71bd6c9952b26df1f077fa003bce232254e993de61e249f129f8ae0a578",
+          "gitStatus": ""
+        }
+      ]
+    }
+  }
+}

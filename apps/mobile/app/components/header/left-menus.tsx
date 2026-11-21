@@ -27,9 +27,11 @@ import { IconButton } from "../ui/icon-button";
 
 export const LeftMenus = ({
   canGoBack,
+  menuIcon = "menu",
   onLeftButtonPress
 }: {
   canGoBack?: boolean;
+  menuIcon?: string;
   onLeftButtonPress?: () => void;
 }) => {
   const { colors } = useThemeColors();
@@ -50,7 +52,7 @@ export const LeftMenus = ({
     Navigation.goBack();
   };
 
-  return isTablet && !canGoBack ? null : (
+  return isTablet && !canGoBack && !onLeftButtonPress ? null : (
     <IconButton
       testID={notesnook.ids.default.header.buttons.left}
       left={40}
@@ -59,8 +61,12 @@ export const LeftMenus = ({
       onLongPress={() => {
         Navigation.popToTop();
       }}
-      name={canGoBack ? "arrow-left" : "menu"}
-      color={colors.primary.icon}
+      name={canGoBack ? "arrow-left" : menuIcon}
+      color={
+        !canGoBack && menuIcon === "folder-outline"
+          ? colors.primary.accent
+          : colors.primary.icon
+      }
     />
   );
 };

@@ -115,7 +115,7 @@ type SearchMode = "appendNote" | "selectNotebooks" | "selectTags";
 
 const SearchPlaceholder: Record<SearchMode, () => string> = {
   appendNote: () => strings.searchForANote(),
-  selectNotebooks: () => strings.searchForANotebook(),
+  selectNotebooks: () => strings.searchForAFolder(),
   selectTags: () => strings.searchForATag()
 };
 
@@ -191,10 +191,14 @@ const NotebookItem = ({
         >
           <Icon
             size={20}
-            color={colors.primary.icon}
+            color={
+              nestedNotebooks?.placeholders.length
+                ? colors.primary.icon
+                : colors.primary.accent
+            }
             name={
               !nestedNotebooks?.placeholders.length
-                ? "book-outline"
+                ? "folder-outline"
                 : isExpanded
                 ? "chevron-down"
                 : "chevron-right"
@@ -542,7 +546,7 @@ export const Search = ({
                   ? strings.emptyPlaceholders("note")
                   : mode === "selectTags"
                   ? strings.emptyPlaceholders("tag")
-                  : strings.emptyPlaceholders("notebook")}
+                  : strings.noFolders()}
               </Text>
             </View>
           }

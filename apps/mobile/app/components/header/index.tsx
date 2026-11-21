@@ -40,22 +40,28 @@ import { RightMenus } from "./right-menus";
 export const Header = ({
   renderedInRoute,
   onLeftMenuButtonPress,
+  menuIcon,
   title,
   id,
   canGoBack,
   hasSearch,
+  roundedSearch = false,
   onSearch,
-  rightButton
+  rightButton,
+  trailingAction
 }: {
   onLeftMenuButtonPress?: () => void;
+  menuIcon?: string;
   renderedInRoute?: RouteName;
   id?: string;
   title?: string;
   canGoBack?: boolean;
   onPressDefaultRightButton?: () => void;
   hasSearch?: boolean;
+  roundedSearch?: boolean;
   onSearch?: () => void;
   rightButton?: IconButtonProps;
+  trailingAction?: React.ReactNode;
 }) => {
   const { colors } = useThemeColors();
   const [borderHidden, setBorderHidden] = useState(true);
@@ -90,14 +96,22 @@ export const Header = ({
   return (
     <View
       style={{
-        paddingHorizontal: DefaultAppStyles.GAP
+        paddingHorizontal: DefaultAppStyles.GAP,
+        ...(trailingAction
+          ? {
+              flexDirection: "row",
+              alignItems: "center",
+              gap: DefaultAppStyles.GAP_SMALL
+            }
+          : {})
       }}
     >
       <HeaderWrapper
         style={{
+          flex: trailingAction ? 1 : undefined,
           flexDirection: "row",
           justifyContent: "space-between",
-          borderRadius: 10,
+          borderRadius: hasSearch && roundedSearch ? 999 : 10,
           paddingVertical: 3,
           borderWidth: hasSearch ? 1 : 0,
           borderColor: colors.primary.border,
@@ -111,6 +125,7 @@ export const Header = ({
       >
         <LeftMenus
           canGoBack={canGoBack}
+          menuIcon={menuIcon}
           onLeftButtonPress={onLeftMenuButtonPress}
         />
 
@@ -135,6 +150,7 @@ export const Header = ({
 
         <RightMenus rightButton={rightButton} />
       </HeaderWrapper>
+      {trailingAction}
     </View>
   );
 };

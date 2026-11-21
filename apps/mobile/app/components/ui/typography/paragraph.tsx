@@ -20,6 +20,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import { useThemeColors } from "@notesnook/theme";
 import React from "react";
 import { Text, TextProps } from "react-native";
+import { appBodyFont } from "../../../utils/styles";
 import { AppFontSize } from "../../../utils/size";
 interface ParagraphProps extends TextProps {
   color?: string;
@@ -41,7 +42,7 @@ const Paragraph = ({
           fontSize: size || AppFontSize.sm,
           color: color || colors.primary.paragraph,
           fontWeight: "400",
-          fontFamily: "Inter-Regular"
+          fontFamily: appBodyFont
         },
         style
       ]}

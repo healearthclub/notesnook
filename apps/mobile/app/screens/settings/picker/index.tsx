@@ -27,7 +27,7 @@ import { Pressable } from "../../../components/ui/pressable";
 import Paragraph from "../../../components/ui/typography/paragraph";
 import { getColorLinearShade } from "../../../utils/colors";
 import { AppFontSize, defaultBorderRadius } from "../../../utils/size";
-import { DefaultAppStyles } from "../../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../../utils/styles";
 import { verifyUser } from "../functions";
 
 interface PickerOptions<T, B = any> {
@@ -154,7 +154,7 @@ export function SettingsPicker<T>({
             }}
             textStyle={{
               fontSize: AppFontSize.sm,
-              fontFamily: "Inter-Regular",
+              fontFamily: appBodyFont,
               color: compareValue(currentValue, item)
                 ? colors.primary.accent
                 : colors.primary.paragraph

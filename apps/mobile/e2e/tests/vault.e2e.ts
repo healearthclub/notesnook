@@ -63,10 +63,7 @@ async function openLockedNote(pwd = "1234") {
 
 async function goToPrivacySecuritySettings() {
   await TestBuilder.create()
-    .openSideMenu()
-    .waitAndTapById("sidemenu-settings-icon")
-    .wait()
-    .waitAndTapByText("Settings")
+    .openSettings()
     .addStep(async () => {
       const element = new Element("id", "settings-list");
       await element.element.scroll(200, "down");

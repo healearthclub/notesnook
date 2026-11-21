@@ -1,0 +1,16 @@
+[
+  {
+    "edition": "WEB",
+    "source": "https://ebible.org/Scriptures/engwebp_usfx.zip",
+    "sourceDate": "2026-11-16",
+    "archiveSHA256": "ec268c7a1582a6e581e344af1c6e27e31b9d2f03df21ca0333ec77871ccd0465",
+    "verses": 31103
+  },
+  {
+    "edition": "BSB",
+    "source": "https://ebible.org/Scriptures/engbsb_usfx.zip",
+    "sourceDate": "2026-10-29",
+    "archiveSHA256": "439b3e585d5f0b62933212cf59f9e11c9f98d05fcd57014d3e20749afcebfc40",
+    "verses": 31086
+  }
+]

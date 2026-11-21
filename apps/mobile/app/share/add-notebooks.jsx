@@ -57,12 +57,12 @@ export const AddNotebooks = ({ onPress }) => {
             }}
           >
             <Icon
-              name="notebook-outline"
+              name="folder-outline"
               size={20}
               style={{
                 marginRight: 10
               }}
-              color={colors.secondary.icon}
+              color={colors.primary.accent}
             />
             <Text
               allowFontScaling={false}
@@ -71,7 +71,7 @@ export const AddNotebooks = ({ onPress }) => {
                 fontSize: 15
               }}
             >
-              {strings.addToNotebook()}
+              {strings.addToFolder()}
             </Text>
           </View>
         </>
@@ -138,7 +138,8 @@ const NotebookItem = ({ id }) => {
       allowFontScaling={false}
       key={item.id}
     >
-      <Icon name={"notebook-outline"} size={15} /> {item.title}
+      <Icon name="folder-outline" size={15} color={colors.primary.accent} />{" "}
+      {item.title}
     </Text>
   );
 };

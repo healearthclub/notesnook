@@ -25,11 +25,10 @@ import { TextInput, View } from "react-native";
 import { DatabaseLogger, db } from "../../common/database";
 import { useDBItem, useTotalNotes } from "../../hooks/use-db-item";
 import { TaggedNotes } from "../../screens/notes/tagged";
-import Navigation from "../../services/navigation";
 import useNavigationStore from "../../stores/use-navigation-store";
 import { useTags } from "../../stores/use-tag-store";
 import { AppFontSize, defaultBorderRadius } from "../../utils/size";
-import { DefaultAppStyles } from "../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../utils/styles";
 import { Properties } from "../properties";
 import AppIcon from "../ui/AppIcon";
 import { Pressable } from "../ui/pressable";
@@ -39,12 +38,14 @@ import { SideMenuListEmpty } from "./side-menu-list-empty";
 import { useSideMenuTagsSelectionStore } from "./stores";
 import { LegendList, LegendListRenderItemProps } from "@legendapp/list";
 import { useRelationStore } from "../../stores/use-relation-store";
+import { useSideMenuDismiss } from "./sheet-dismiss";
 
 const TagItem = (props: {
   tags: VirtualizedGrouping<Tag>;
   id: number | string;
 }) => {
   const { colors } = useThemeColors();
+  const dismissMenu = useSideMenuDismiss();
   const [item] = useDBItem(props.id, "tag", props.tags);
   const isSelected = useSideMenuTagsSelectionStore((state) =>
     item?.id ? state.selection[item.id] === "selected" : false
@@ -110,7 +111,7 @@ const TagItem = (props: {
               }
             } else {
               TaggedNotes.navigate(item, false);
-              Navigation.closeDrawer();
+              dismissMenu();
             }
           }}
           style={{
@@ -299,7 +300,7 @@ export const SideMenuTags = () => {
             <TextInput
               placeholder={strings.filterTags()}
               style={{
-                fontFamily: "Inter-Regular",
+                fontFamily: appBodyFont,
                 fontSize: AppFontSize.xs,
                 paddingTop: 0,
                 paddingBottom: 0

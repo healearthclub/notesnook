@@ -21,7 +21,7 @@
     "start:android": "npm run tx mobile:run-android",
     "start:android:release": "npm run tx mobile:run-android-release",
     "start:ios": "npm run tx mobile:run-ios",
-    "prepare:ios": "npm run tx mobile:install-pods",
+    "prepare:ios": "npm --prefix apps/mobile run install-pods",
     "build:ios": "npm run tx mobile:build-ios",
     "build:android": "npm run tx mobile:build-android",
     "build:android:debug": "npm run tx mobile:build-android-debug",

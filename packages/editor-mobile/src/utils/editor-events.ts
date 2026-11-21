@@ -31,6 +31,7 @@ export const EditorEvents = {
   back: "editor-event:back",
   pro: "editor-event:pro",
   monograph: "editor-event:monograph",
+  sendNote: "editor-event:send-note",
   properties: "editor-event:properties",
   fullscreen: "editor-event:fullscreen",
   link: "editor-event:link",

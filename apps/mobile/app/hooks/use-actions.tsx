@@ -285,7 +285,7 @@ export const useActions = ({
       heading:
         type === "note"
           ? strings.noteRestoredFromTrash()
-          : strings.notebookRestoredFromTrash(),
+          : strings.folderRestoredFromTrash(),
       type: "success"
     });
   }
@@ -607,7 +607,7 @@ export const useActions = ({
     actions.push(
       {
         id: "add-notebook",
-        title: strings.addNotebook(),
+        title: strings.addFolder(),
         icon: "plus",
         onPress: async () => {
           if (features && !features.notebooks.isAllowed) {
@@ -631,7 +631,7 @@ export const useActions = ({
       },
       {
         id: "edit-notebook",
-        title: strings.editNotebook(),
+        title: strings.editFolder(),
         icon: "square-edit-outline",
         onPress: async () => {
           close();
@@ -646,7 +646,7 @@ export const useActions = ({
             ? strings.removeAsDefault()
             : strings.setAsDefault(),
         hidden: item.type !== "notebook",
-        icon: "notebook",
+        icon: "folder-outline",
         onPress: async () => {
           if (defaultNotebook === item.id) {
             await db.settings.setDefaultNotebook(undefined);
@@ -691,7 +691,7 @@ export const useActions = ({
       },
       {
         id: "move-notebook",
-        title: strings.moveNotebookFix(),
+        title: strings.moveFolderFix(),
         icon: "arrow-right-bold-box-outline",
         onPress: () => {
           close();
@@ -863,7 +863,7 @@ export const useActions = ({
     }
 
     async function publishNote() {
-      if (!user) {
+      if (Platform.OS !== "ios" && !user) {
         ToastManager.show({
           heading: strings.loginRequired(),
           context: "local",
@@ -877,7 +877,7 @@ export const useActions = ({
         return;
       }
 
-      if (!user?.isEmailConfirmed) {
+      if (Platform.OS !== "ios" && !user?.isEmailConfirmed) {
         ToastManager.show({
           heading: strings.confirmEmailToPublish(),
           context: "local"
@@ -1048,7 +1048,7 @@ export const useActions = ({
       },
       {
         id: "remove-from-notebook",
-        title: strings.removeFromNotebook(),
+        title: strings.removeFromFolder(),
         hidden: noteInCurrentNotebook,
         icon: "minus-circle-outline",
         onPress: removeNoteFromNotebook
@@ -1162,8 +1162,8 @@ export const useActions = ({
 
       {
         id: "notebooks",
-        title: strings.addToNotebook(),
-        icon: "book-outline",
+        title: strings.addToFolder(),
+        icon: "folder-outline",
         onPress: addTo
       },
       {

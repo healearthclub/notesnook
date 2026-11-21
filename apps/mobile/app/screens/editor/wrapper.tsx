@@ -142,7 +142,9 @@ export const EditorWrapper = ({
             style={{ height: 1, padding: 0, width: 1, position: "absolute" }}
             blurOnSubmit={false}
           />
-          <Editor key="editor" withController={true} />
+          <View style={{ flex: 1 }}>
+            <Editor key="editor" withController keyboardToolbar />
+          </View>
         </KeyboardAvoidingView>
       )}
     </View>

@@ -27,7 +27,7 @@ import {
 import { useThemeColors } from "@notesnook/theme";
 import { EntityLevel, decode } from "entities";
 import React from "react";
-import { View } from "react-native";
+import { Platform, View } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { useIsCompactModeEnabled } from "../../../hooks/use-is-compact-mode-enabled";
 import useNavigationStore, {
@@ -131,7 +131,9 @@ const NoteItem = ({
               paddingRight: 10
             }}
           >
-            {item.title}
+            {Platform.OS === "ios" && !item.title
+              ? strings.untitledNote()
+              : item.title}
           </Paragraph>
         ) : (
           <Heading
@@ -142,7 +144,9 @@ const NoteItem = ({
               paddingRight: 10
             }}
           >
-            {item.title}
+            {Platform.OS === "ios" && !item.title
+              ? strings.untitledNote()
+              : item.title}
           </Heading>
         )}
 
@@ -304,9 +308,9 @@ const NoteItem = ({
                       }}
                     >
                       <AppIcon
-                        name="book-outline"
+                        name="folder-outline"
                         size={AppFontSize.xxxs}
-                        color={colors.secondary.icon}
+                        color={colors.primary.accent}
                       />
                       <Paragraph
                         size={AppFontSize.xxxs}

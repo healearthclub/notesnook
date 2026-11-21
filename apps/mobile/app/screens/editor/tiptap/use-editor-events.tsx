@@ -17,6 +17,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import PublishNoteSheet from "../../../components/sheets/publish-note";
 /* eslint-disable no-case-declarations */
 /* eslint-disable @typescript-eslint/no-var-requires */
 import { isFeatureAvailable, useAreFeaturesAvailable } from "@notesnook/common";
@@ -70,12 +71,11 @@ import {
   eOnExitEditor,
   eOnLoadNote,
   eOpenFullscreenEditor,
-  eOpenPublishNoteDialog,
   eUnlockWithBiometrics,
   eUnlockWithPassword
 } from "../../../utils/events";
 import { openLinkInBrowser } from "../../../utils/functions";
-import { fluidTabsRef } from "../../../utils/global-refs";
+import { fluidTabsRef, rootNavigatorRef } from "../../../utils/global-refs";
 import { sleep } from "../../../utils/time";
 import AddReminder from "../../add-reminder";
 import ManageTags from "../../manage-tags";
@@ -90,7 +90,7 @@ import { ShareComponent } from "../../../components/sheets/export-notes/share";
 
 const publishNote = async () => {
   const user = useUserStore.getState().user;
-  if (!user) {
+  if (Platform.OS !== "ios" && !user) {
     ToastManager.show({
       heading: strings.loginRequired(),
       context: "global",
@@ -104,7 +104,7 @@ const publishNote = async () => {
     return;
   }
 
-  if (!user?.isEmailConfirmed) {
+  if (Platform.OS !== "ios" && !user?.isEmailConfirmed) {
     ToastManager.show({
       heading: strings.emailNotConfirmed(),
       context: "global"
@@ -129,7 +129,7 @@ const publishNote = async () => {
     if (editorState().isFocused) {
       editorState().isFocused = true;
     }
-    eSendEvent(eOpenPublishNoteDialog, note);
+    if (note) PublishNoteSheet.present(note);
   }
 };
 
@@ -153,7 +153,12 @@ type ContentMessage = { html: string };
 
 export const useEditorEvents = (
   editor: useEditorType,
-  { readonly: editorPropReadonly, noHeader, noToolbar }: Partial<EditorProps>
+  {
+    readonly: editorPropReadonly,
+    noHeader,
+    noToolbar,
+    keyboardToolbar
+  }: Partial<EditorProps>
 ) => {
   const features = useAreFeaturesAvailable([
     "callout",
@@ -176,7 +181,7 @@ export const useEditorEvents = (
     ]);
   const handleBack = useRef<NativeEventSubscription>(undefined);
   const loggedIn = useUserStore((state) => !!state.user);
-  const { fontScale } = useWindowDimensions();
+  const { fontScale, width } = useWindowDimensions();
 
   const doubleSpacedLines = useSettingStore(
     (state) => state.settings?.doubleSpacedLines
@@ -193,8 +198,15 @@ export const useEditorEvents = (
 
   const tools = useDragState((state) => state.data);
   useEffect(() => {
-    const handleKeyboardDidShow: KeyboardEventListener = () => {
-      editor.commands.keyboardShown(true);
+    const handleKeyboardDidShow: KeyboardEventListener = ({
+      endCoordinates
+    }) => {
+      editor.commands.keyboardShown(
+        true,
+        !!keyboardToolbar &&
+          Platform.OS === "ios" &&
+          endCoordinates.width >= width
+      );
       editor.postMessage(NativeEvents.keyboardShown, undefined);
     };
     const handleKeyboardDidHide: KeyboardEventListener = () => {
@@ -207,7 +219,7 @@ export const useEditorEvents = (
     return () => {
       subscriptions.forEach((subscription) => subscription.remove());
     };
-  }, [editor, editor.commands, editor.postMessage]);
+  }, [editor, editor.commands, editor.postMessage, keyboardToolbar, width]);
   useEffect(() => {
     if (typeof defaultFontFamily === "object") {
       SettingsService.set({
@@ -651,6 +663,25 @@ export const useEditorEvents = (
         case EditorEvents.monograph:
           publishNote();
           break;
+        case EditorEvents.sendNote: {
+          if (
+            Platform.OS !== "ios" ||
+            !keyboardToolbar ||
+            rootNavigatorRef.getCurrentRoute()?.name === "SendNote"
+          )
+            return;
+          const text = editorMessage.value;
+          if (typeof text !== "string" || !text.trim()) {
+            ToastManager.show({
+              message: "Add some text before sending this note.",
+              type: "info"
+            });
+            return;
+          }
+          Keyboard.dismiss();
+          Navigation.navigate("SendNote", { message: text });
+          return;
+        }
         case EditorEvents.properties:
           showActionsheet();
           break;
@@ -881,7 +912,7 @@ export const useEditorEvents = (
       }
       eSendEvent(editorMessage.type, editorMessage);
     },
-    [editor, onBackPress]
+    [editor, keyboardToolbar, onBackPress]
   );
 
   return onMessage;

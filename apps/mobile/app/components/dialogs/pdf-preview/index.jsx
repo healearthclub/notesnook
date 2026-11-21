@@ -35,7 +35,7 @@ import {
   eUnSubscribeEvent
 } from "../../../services/event-manager";
 import { AppFontSize } from "../../../utils/size";
-import { DefaultAppStyles } from "../../../utils/styles";
+import { appBodyFont, DefaultAppStyles } from "../../../utils/styles";
 import { sleep } from "../../../utils/time";
 import { Dialog } from "../../dialog";
 import BaseDialog from "../../dialog/base-dialog";
@@ -259,7 +259,7 @@ const PDFPreview = () => {
                         textAlign: "center",
                         marginRight: 4,
                         borderRadius: 3,
-                        fontFamily: "Inter-Regular"
+                        fontFamily: appBodyFont
                       }}
                       selectTextOnFocus
                       keyboardType="decimal-pad"

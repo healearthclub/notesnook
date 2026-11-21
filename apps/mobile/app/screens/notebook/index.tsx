@@ -28,6 +28,8 @@ import List from "../../components/list";
 import { NotebookHeader } from "../../components/list-items/headers/notebook-header";
 import { Properties } from "../../components/properties";
 import SelectionHeader from "../../components/selection-header";
+import { NotesListLayout } from "../../features/notes/list-layout";
+import { usesNotesTabLayout } from "../../features/notes/list-route";
 import { useNavigationFocus } from "../../hooks/use-navigation-focus";
 import { eSendEvent, eSubscribeEvent } from "../../services/event-manager";
 import Navigation, { NavigationProps } from "../../services/navigation";
@@ -38,13 +40,16 @@ import { eUpdateNotebookRoute } from "../../utils/events";
 import { findRootNotebookId } from "../../utils/notebooks";
 import { openEditor, setOnFirstSave } from "../notes/common";
 import { View } from "react-native";
+import { ChildFolders } from "./child-folders";
 import { Notebooks } from "../../components/sheets/notebooks";
 import { useSettingStore } from "../../stores/use-setting-store";
 import { rootNavigatorRef } from "../../utils/global-refs";
 import { getGroupOptions } from "../../hooks/use-group-options";
 
 const NotebookScreen = ({ route, navigation }: NavigationProps<"Notebook">) => {
+  const useBottomToolbar = usesNotesTabLayout(route.name);
   const [notes, setNotes] = useState<VirtualizedGrouping<Note>>();
+  const [childFolders, setChildFolders] = useState<Notebook[]>([]);
   const params = useRef<NotebookScreenParams>(
     route?.params || ({} as NotebookScreenParams)
   );
@@ -63,13 +68,13 @@ const NotebookScreen = ({ route, navigation }: NavigationProps<"Notebook">) => {
 
   useNavigationFocus(navigation, {
     onFocus: () => {
+      syncWithNavigation();
       if (updateOnFocus.current) {
         onRequestUpdate();
         updateOnFocus.current = false;
       } else {
         Navigation.routeNeedsUpdate(route.name, onRequestUpdate);
       }
-      syncWithNavigation();
       return false;
     },
     onBlur: () => {
@@ -114,21 +119,32 @@ const NotebookScreen = ({ route, navigation }: NavigationProps<"Notebook">) => {
       if (data) params.current = data;
 
       try {
-        const notebook = await db.notebooks?.notebook(params?.current?.id);
-        setNotebook(notebook);
-        params.current.item = notebook;
+        const id = params.current.id;
+        const notebook = await db.notebooks?.notebook(id);
+        if (params.current.id !== id) return;
         if (notebook) {
-          const breadcrumbs = await db.notebooks.breadcrumbs(notebook.id);
-          setBreadcrumbs(breadcrumbs.slice(0, breadcrumbs.length - 1));
-          params.current.id = notebook.id;
-          const notes = await db.relations
-            .from(notebook, "note")
-            .selector.grouped(
-              getGroupOptions("notes", notebook.id, "notebook")
-            );
+          const [breadcrumbs, folders, notes] = await Promise.all([
+            db.notebooks.breadcrumbs(notebook.id),
+            db.relations
+              .from(notebook, "notebook")
+              .selector.items(
+                undefined,
+                db.settings.getGroupOptions("notebooks")
+              ),
+            db.relations
+              .from(notebook, "note")
+              .selector.grouped(
+                getGroupOptions("notes", notebook.id, "notebook")
+              )
+          ]);
+          if (params.current.id !== id) return;
+          setNotebook(notebook);
+          params.current.item = notebook;
+          setBreadcrumbs(breadcrumbs.slice(0, -1));
+          setChildFolders(folders);
           setNotes(notes);
           await notes.item(0, resolveItems);
-          syncWithNavigation();
+          if (navigation.isFocused()) syncWithNavigation();
         } else {
           if (rootNavigatorRef.canGoBack()) {
             Navigation.goBack();
@@ -141,7 +157,7 @@ const NotebookScreen = ({ route, navigation }: NavigationProps<"Notebook">) => {
         console.error(e);
       }
     },
-    [syncWithNavigation]
+    [navigation, syncWithNavigation]
   );
 
   useEffect(() => {
@@ -161,96 +177,127 @@ const NotebookScreen = ({ route, navigation }: NavigationProps<"Notebook">) => {
 
   return (
     <>
-      <Header
-        renderedInRoute={route.name}
-        title={notebook?.title}
-        canGoBack={params?.current?.canGoBack}
-        rightButton={{
-          name: "dots-vertical",
-          onPress: () => {
-            Properties.present(notebook);
-          }
-        }}
-        hasSearch={true}
-        onSearch={() => {
-          if (!notebook) return;
-          const selector = db.relations.from(notebook, "note").selector;
-          Navigation.push("Search", {
-            placeholder: strings.searchInRoute(notebook?.title),
-            type: "note",
-            title: notebook?.title,
-            route: route.name,
-            items: selector
-          });
-        }}
-        id={notebook?.id}
-      />
-
-      <DelayLayout wait={loading}>
-        <List
-          data={notes}
-          dataType="note"
-          groupType="notes"
-          onRefresh={() => {
-            onRequestUpdate();
-          }}
-          id={params.current?.id}
-          type="notebook"
-          renderedInRoute="Notebook"
-          headerTitle={notebook?.title}
-          loading={loading}
-          CustomLisHeader={
-            notebook ? (
-              <NotebookHeader
-                breadcrumbs={breadcrumbs}
-                notebook={notebook}
-                totalNotes={notes?.placeholders.length || 0}
-              />
-            ) : undefined
-          }
-          placeholder={{
-            title: notebook?.title || "",
-            paragraph: strings.notesEmpty(),
-            button: strings.addFirstNote(),
-            action: openEditor,
-            loading: strings.loadingNotes()
-          }}
-        />
-      </DelayLayout>
-      <View
-        style={{
-          position: "absolute",
-          bottom: 20,
-          right: 20,
-          alignItems: "center"
-        }}
+      <NotesListLayout
+        header={
+          <Header
+            renderedInRoute={route.name}
+            title={notebook?.title}
+            canGoBack={params?.current?.canGoBack}
+            rightButton={{
+              name: "dots-vertical",
+              onPress: () => {
+                Properties.present(notebook);
+              }
+            }}
+            hasSearch={true}
+            onSearch={() => {
+              if (!notebook) return;
+              const selector = db.relations.from(notebook, "note").selector;
+              Navigation.push("Search", {
+                placeholder: strings.searchInRoute(notebook?.title),
+                type: "note",
+                title: notebook?.title,
+                route: route.name,
+                items: selector
+              });
+            }}
+            id={notebook?.id}
+            trailingAction={
+              useBottomToolbar && notebook ? (
+                <FloatingButton
+                  inline
+                  accessibilityLabel={strings.createNewNote()}
+                  onPress={openEditor}
+                  alwaysVisible
+                />
+              ) : undefined
+            }
+          />
+        }
       >
-        <FloatingButton
-          icon="file-tree"
-          testID="notebookTreeSheet"
-          size="small"
-          onPress={() => {
-            if (!notebook) return;
-            Notebooks.present(notebook);
-          }}
+        <DelayLayout wait={loading}>
+          <List
+            data={notes}
+            dataType="note"
+            groupType="notes"
+            onRefresh={() => {
+              onRequestUpdate();
+            }}
+            id={params.current?.id}
+            type="notebook"
+            renderedInRoute="Notebook"
+            headerTitle={notebook?.title}
+            loading={loading}
+            CustomLisHeader={
+              notebook ? (
+                <>
+                  <NotebookHeader
+                    breadcrumbs={breadcrumbs}
+                    notebook={notebook}
+                    totalNotes={notes?.placeholders.length || 0}
+                  />
+                  {childFolders.length > 0 && (
+                    <ChildFolders
+                      key={notebook.id}
+                      folders={childFolders}
+                      onOpen={(folder) =>
+                        Navigation.push("Notebook", {
+                          id: folder.id,
+                          item: folder,
+                          canGoBack: true
+                        })
+                      }
+                    />
+                  )}
+                </>
+              ) : undefined
+            }
+            placeholder={{
+              title: notebook?.title || "",
+              paragraph: strings.notesEmpty(),
+              button: strings.addFirstNote(),
+              action: openEditor,
+              loading: strings.loadingNotes()
+            }}
+          />
+        </DelayLayout>
+        <View
           style={{
-            position: "relative",
-            right: 0,
-            bottom: 0,
-            paddingBottom: 10
+            position: "absolute",
+            bottom: 20,
+            right: 20,
+            alignItems: "center"
           }}
-        />
-        <FloatingButton
-          onPress={openEditor}
-          alwaysVisible
-          style={{
-            position: "relative",
-            paddingTop: 10,
-            right: 0,
-            bottom: 0
-          }}
-        />
-      </View>
+        >
+          <FloatingButton
+            icon="file-tree"
+            testID="notebookTreeSheet"
+            size="small"
+            onPress={() => {
+              if (!notebook) return;
+              Notebooks.present(notebook);
+            }}
+            style={{
+              position: "relative",
+              right: 0,
+              bottom: 0,
+              paddingBottom: 10
+            }}
+          />
+          {!useBottomToolbar && (
+            <FloatingButton
+              onPress={openEditor}
+              alwaysVisible
+              style={{
+                position: "relative",
+                paddingTop: 10,
+                right: 0,
+                bottom: 0
+              }}
+            />
+          )}
+        </View>
+      </NotesListLayout>
       <SelectionHeader
         id={route.params?.id}
         items={notes}

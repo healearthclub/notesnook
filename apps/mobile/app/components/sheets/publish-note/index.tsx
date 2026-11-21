@@ -17,12 +17,14 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+import OwnedPublishNoteSheet from "./owned";
 import { Note } from "@notesnook/core";
 import { strings } from "@notesnook/intl";
 import { useThemeColors } from "@notesnook/theme";
 import Clipboard from "@react-native-clipboard/clipboard";
 import React, { useEffect, useRef, useState } from "react";
 import {
+  Platform,
   ActivityIndicator,
   TextInput,
   TouchableOpacity,
@@ -522,10 +524,25 @@ const PublishNoteSheet = ({
   );
 };
 
+function PublishSelection({
+  note,
+  close
+}: {
+  note: Note;
+  close?: (ctx?: string) => void;
+}) {
+  const [legacy, setLegacy] = useState(false);
+  return Platform.OS === "ios" && !legacy ? (
+    <OwnedPublishNoteSheet note={note} onLegacy={() => setLegacy(true)} />
+  ) : (
+    <PublishNoteSheet close={close} note={note} />
+  );
+}
+
 PublishNoteSheet.present = (note: Note) => {
   presentSheet({
     component: (ref, close, update) => (
-      <PublishNoteSheet close={close} note={note} />
+      <PublishSelection close={close} note={note} />
     )
   });
 };

@@ -95,10 +95,6 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
   );
   const previousTab = useSharedValue(1);
   const isDrawerOpen = useSharedValue(false);
-  const gestureStartValue = useSharedValue({
-    x: 0,
-    y: 0
-  });
   const locked = useSharedValue(false);
   const forcedLock = useSharedValue(false);
   const [disabled, setDisabled] = useState(false);
@@ -295,12 +291,20 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
     .enabled(enabled && !disabled)
     .activeOffsetX([-5, 5])
     .failOffsetY([-10, 10])
-    .onBegin((event) => {
+    .onTouchesDown((event, state) => {
+      const touch = event.changedTouches[0];
+      if (!isIPhone) return;
+      // Notes owns horizontal gestures while the drawer is closed.
+      // The editor keeps its back swipe at the left edge.
+      if (
+        (currentTab.value === 1 && !isDrawerOpen.value) ||
+        (currentTab.value === 2 && touch && touch.absoluteX > 25)
+      ) {
+        state.fail();
+      }
+    })
+    .onBegin(() => {
       locked.value = false;
-      gestureStartValue.value = {
-        x: event.absoluteX,
-        y: event.absoluteY
-      };
     })
     .onStart((event) => {
       let vx = event.velocityX;
@@ -319,10 +323,8 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
       const value = translateX.value + event.changeX * -1;
       if (
         value < 0 ||
+        (isIPhone && isDrawerOpen.value && value > homePosition) ||
         (currentTab.value === 2 && Platform.OS === "android") ||
-        (currentTab.value === 2 &&
-          gestureStartValue.value.x > 25 &&
-          Platform.OS === "ios") ||
         (value >= homePosition && isSmallTab) ||
         value > editorPosition
       )
@@ -335,9 +337,13 @@ export const FluidPanels = forwardRef<TabsRef, TabProps>(function FluidTabs(
       const velocityX =
         event.velocityX < 0 ? event.velocityX * -1 : event.velocityX;
       const isSwipeLeft = startX.value > translateX.value;
-      const finalValue = isSwipeLeft
+      const projectedValue = isSwipeLeft
         ? translateX.value - velocityX / 40.0
         : translateX.value + velocityX / 40.0;
+      const finalValue =
+        isIPhone && isDrawerOpen.value
+          ? Math.min(projectedValue, homePosition)
+          : projectedValue;
       const velocity = velocityX / 5000;
       const animationConfig: WithSpringConfig = {
         velocity: velocity,

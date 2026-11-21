@@ -19,6 +19,7 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 import { useThemeColors } from "@notesnook/theme";
 import React from "react";
+import { usesNotesTabLayout } from "../../../features/notes/list-route";
 import { useMessageStore } from "../../../stores/use-message-store";
 import { RouteParams } from "../../../stores/use-navigation-store";
 import { Announcement } from "../../announcements/announcement";
@@ -42,6 +43,9 @@ export const Header = React.memo(
   }: ListHeaderProps) => {
     const { colors } = useThemeColors();
     const announcements = useMessageStore((state) => state.announcements);
+    const hideLoginPrompt = useMessageStore(
+      (state) => usesNotesTabLayout(screen) && state.message.id === "log-in"
+    );
 
     return (
       <>
@@ -49,7 +53,7 @@ export const Header = React.memo(
           <Announcement />
         ) : (screen as any) === "Search" ? null : !shouldShow ? (
           <>
-            {messageCard ? (
+            {messageCard && !hideLoginPrompt ? (
               <Card color={color || colors.primary.accent} />
             ) : null}
           </>

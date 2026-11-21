@@ -38,9 +38,11 @@ import { ColorSection } from "./color-section";
 import { MenuItem } from "./menu-item";
 import { PinnedSection } from "./pinned-section";
 import { SideMenuHeader } from "./side-menu-header";
+import { useSideMenuSheetDismiss } from "./sheet-dismiss";
 
 export function SideMenuHome() {
   const { colors } = useThemeColors();
+  const dismissSheet = useSideMenuSheetDismiss();
   const [isAppLoading, introCompleted] = useSettingStore((state) => [
     state.isAppLoading,
     state.settings.introCompleted
@@ -144,6 +146,7 @@ export function SideMenuHome() {
                 }}
                 type="accent"
                 onPress={() => {
+                  dismissSheet?.();
                   Navigation.navigate("PayWall", {
                     context: "logged-in"
                   });
@@ -160,6 +163,7 @@ export function SideMenuHome() {
             bold
             type="secondaryAccented"
             onPress={() => {
+              dismissSheet?.();
               Navigation.navigate("Wrapped");
             }}
           />

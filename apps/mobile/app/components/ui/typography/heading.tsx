@@ -28,11 +28,11 @@ interface HeadingProps extends TextProps {
 }
 
 const extraBoldStyle = {
-  fontFamily: Platform.OS === "android" ? "Inter-Bold" : undefined,
+  fontFamily: Platform.select({ ios: "System", android: "Inter-Bold" }),
   fontWeight: Platform.OS === "ios" ? "800" : undefined
 };
 const boldStyle = {
-  fontFamily: Platform.OS === "android" ? "Inter-SemiBold" : undefined,
+  fontFamily: Platform.select({ ios: "System", android: "Inter-SemiBold" }),
   fontWeight: Platform.OS === "ios" ? "600" : undefined
 };
 

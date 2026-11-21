@@ -28,3 +28,12 @@
 ## Sign-off
 - [ ] QA passed
 - [ ] UI/UX passed
+
+## Shared product traceability
+
+- Story ID and reviewed specification revision:
+- Applicable client(s) and criterion IDs:
+- Source/build evidence:
+- Verification run, environment and limitations:
+- Release state (separate from implementation/testing):
+- Shared records/contract decisions updated, or reason not applicable:

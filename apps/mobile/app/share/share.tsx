@@ -576,7 +576,6 @@ const ShareView = () => {
                         style={{
                           flexShrink: 1,
                           flexGrow: 1,
-                          fontFamily: "Inter-SemiBold",
                           fontSize: AppFontSize.lg,
                           paddingBottom: 0,
                           paddingTop: 0
@@ -593,7 +592,9 @@ const ShareView = () => {
                         style={{
                           flexShrink: 1,
                           flexGrow: 1,
-                          fontFamily: "Inter-SemiBold",
+                          fontFamily:
+                            Platform.OS === "ios" ? "System" : "Inter-SemiBold",
+                          fontWeight: Platform.OS === "ios" ? "600" : undefined,
                           fontSize: AppFontSize.lg,
                           paddingBottom: 0,
                           paddingTop: 0,
